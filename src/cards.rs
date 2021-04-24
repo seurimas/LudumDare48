@@ -106,25 +106,49 @@ impl<'s> System<'s> for CardSpawningSystem {
         ReadStorage<'s, Alertable>,
         WriteStorage<'s, DiggingCard>,
         WidgetSpawner<'s>,
+        Entities<'s>,
     );
 
-    fn run(&mut self, (alertables, mut cards, mut spawner): Self::SystemData) {
+    fn run(&mut self, (alertables, mut cards, mut spawner, entities): Self::SystemData) {
         /*
          Loop through alertables, check if any have been clicked based on the state. If so, spawn a card. Also, maybe, delete any old cards.
          It's maybe a good idea to split this up from AlertableSystem, just to keep systems dealing only with single responsibilities.
         */
         for alertable in alertables.join() {
             if alertable.clicked {
-                let entity = spawner.spawn_ui_widget("prefabs/card.ron", Position { x: 0., y: 0. });
-                let card = match alertable.state {
-                    AlertState::Shovel => DiggingCard::Shovel(ShovelState { click_progress: 0. }),
-                    AlertState::Bucket(_) => DiggingCard::Bucket(BucketState::Empty),
+                for (_card, entity) in (&cards, &entities).join() {
+                    entities.delete(entity).expect("Double delete");
+                }
+                let (prefab, card) = match alertable.state {
+                    AlertState::Shovel => (
+                        "prefabs/shovel_card.ron",
+                        DiggingCard::Shovel(ShovelState { click_progress: 0. }),
+                    ),
+                    AlertState::Bucket(_) => (
+                        "prefabs/bucket_card.ron",
+                        DiggingCard::Bucket(BucketState::Empty),
+                    ),
                 };
+                let entity = spawner.spawn_ui_widget(prefab, Position { x: 0., y: 0. });
                 cards
                     .insert(entity, card)
                     .expect("Unreachable, entity just created");
             }
         }
+    }
+}
+
+fn get_card_entity<'s>(
+    entity: Entity,
+    cards: &impl GenericReadStorage<Component = DiggingCard>,
+    parents: &ReadStorage<'s, Parent>,
+) -> Option<Entity> {
+    if let Some(_card) = cards.get(entity) {
+        Some(entity)
+    } else if let Some(parent) = parents.get(entity) {
+        get_card_entity(parent.entity, cards, parents)
+    } else {
+        None
     }
 }
 
@@ -138,10 +162,15 @@ impl<'s> System<'s> for CardUpdateSystem {
         Write<'s, DiggingStatus>,
         WriteStorage<'s, DiggingCard>,
         Read<'s, InputHandler<StringBindings>>,
+        ReadStorage<'s, Parent>,
+        ReadStorage<'s, UiTransform>,
         Entities<'s>,
     );
 
-    fn run(&mut self, (events, mut digging, mut cards, input, entities): Self::SystemData) {
+    fn run(
+        &mut self,
+        (events, mut digging, mut cards, input, parents, transforms, entities): Self::SystemData,
+    ) {
         /*
          Loop through cards, check the mouse state, and update the card.
          We may need some sort of abstraction here (DiggingCard implements its own update function?) or just a simple match block.
@@ -150,22 +179,28 @@ impl<'s> System<'s> for CardUpdateSystem {
             if event.event_type != UiEventType::Click {
                 continue;
             }
-            if let Some(mut card) = cards.get_mut(event.target) {
+            if let Some((ent, mut card)) = get_card_entity(event.target, &cards, &parents)
+                .and_then(|ent| cards.get_mut(ent).map(|card| (ent, card)))
+            {
                 match card {
                     DiggingCard::Shovel(_) => {
-                        digging.scoop();
-                        if !digging.can_scoop() {
-                            entities
-                                .delete(event.target)
-                                .expect("Unreachable, entitity definitely exists");
+                        if get_ui_name(event.target, &transforms).eq("shovel_dirt") {
+                            digging.scoop();
+                            if !digging.can_scoop() {
+                                entities
+                                    .delete(ent)
+                                    .expect("Unreachable, entitity definitely exists");
+                            }
                         }
                     }
                     DiggingCard::Bucket(_) => {
-                        digging.empty_bucket();
-                        if digging.no_buckets() {
-                            entities
-                                .delete(event.target)
-                                .expect("Unreachable, entitity definitely exists");
+                        if get_ui_name(event.target, &transforms).eq("fill_bucket") {
+                            digging.empty_bucket();
+                            if digging.no_buckets() {
+                                entities
+                                    .delete(ent)
+                                    .expect("Unreachable, entitity definitely exists");
+                            }
                         }
                     }
                 }
@@ -178,13 +213,40 @@ pub struct CardRenderingSystem;
 
 impl<'s> System<'s> for CardRenderingSystem {
     // I'm not 100% sure the component to use for the UI elements here. Probably UIContainer?
-    type SystemData = (ReadStorage<'s, DiggingCard>,);
+    type SystemData = (
+        Read<'s, DiggingStatus>,
+        ReadStorage<'s, DiggingCard>,
+        UiFinder<'s>,
+        WriteStorage<'s, UiImage>,
+    );
 
-    fn run(&mut self, (cards,): Self::SystemData) {
+    fn run(&mut self, (digging, cards, finder, mut images): Self::SystemData) {
         /*
          Loop through cards (really, only the one on screen, probably), update the UI based on card state.
         */
-        for card in cards.join() {}
+        for card in cards.join() {
+            match card {
+                DiggingCard::Shovel(_) => {
+                    if let Some(mut image) = finder
+                        .find("shovel_bucket")
+                        .and_then(|ent| images.get_mut(ent))
+                    {
+                        if digging.scoops_in_top_bucket() == 0 {
+                            update_texture(image, Some(0.25), Some(0.375), Some(0.125), Some(0.25))
+                        } else {
+                            update_texture(
+                                image,
+                                Some(0.125 * digging.scoops_in_top_bucket() as f32 - 0.125),
+                                Some(0.125 * digging.scoops_in_top_bucket() as f32),
+                                Some(0.25),
+                                Some(0.375),
+                            )
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 }
 

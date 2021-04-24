@@ -238,8 +238,10 @@ impl SimpleState for GameplayState {
                         .insert(bucket_entity, crate::digging::Bucket { index: i })
                         .expect("Unreachable, entity just created");
                 }
-                let alert_entity =
-                    spawner.spawn_ui_widget("prefabs/alertable.ron", Position { x: -64., y: -32. });
+                let alert_entity = spawner.spawn_ui_widget(
+                    "prefabs/shovel_alertable.ron",
+                    Position { x: -64., y: -32. },
+                );
                 alertables
                     .insert(
                         alert_entity,
@@ -249,8 +251,10 @@ impl SimpleState for GameplayState {
                         },
                     )
                     .expect("Unreachable: entity just created");
-                let bucket_alert_entity =
-                    spawner.spawn_ui_widget("prefabs/alertable.ron", Position { x: -64., y: -96. });
+                let bucket_alert_entity = spawner.spawn_ui_widget(
+                    "prefabs/bucket_alertable.ron",
+                    Position { x: -64., y: -96. },
+                );
                 alertables
                     .insert(
                         bucket_alert_entity,

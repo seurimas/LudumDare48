@@ -34,6 +34,18 @@ impl DiggingStatus {
         self.scoops = self.scoops - self.scoops_per_bucket;
     }
 
+    pub fn scoops_in_top_bucket(&self) -> u32 {
+        if self.scoops % self.scoops_per_bucket == 0 {
+            if self.scoops == self.scoops_per_bucket * self.buckets {
+                self.scoops_per_bucket
+            } else {
+                0
+            }
+        } else {
+            self.scoops % self.scoops_per_bucket
+        }
+    }
+
     pub fn can_scoop(&self) -> bool {
         self.scoops < self.buckets * self.scoops_per_bucket
     }

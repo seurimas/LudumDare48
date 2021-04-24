@@ -2,18 +2,21 @@ use crate::prelude::*;
 use amethyst::ui::{ToNativeWidget, UiCreator, UiWidget};
 use serde::Deserialize;
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub enum DiggingUi {
-    Alertable(UiWidget<DiggingUi>),
-    Card(UiWidget<DiggingUi>),
+    Alertable { item: UiWidget<DiggingUi> },
+    Card { item: UiWidget<DiggingUi> },
 }
 
 impl ToNativeWidget for DiggingUi {
     type PrefabData = ();
-    fn to_native_widget(self, _: ()) -> (UiWidget<DiggingUi>, Self::PrefabData) {
+    fn to_native_widget(
+        self,
+        _parent_data: Self::PrefabData,
+    ) -> (UiWidget<DiggingUi>, Self::PrefabData) {
         match self {
-            DiggingUi::Card(item) => (item, ()),
-            DiggingUi::Alertable(item) => (item, ()),
+            DiggingUi::Card { item } => (item, ()),
+            DiggingUi::Alertable { item } => (item, ()),
         }
     }
 }
@@ -45,7 +48,7 @@ pub struct WidgetPositioningSystem;
 
 impl<'s> System<'s> for WidgetPositioningSystem {
     type SystemData = (ReadStorage<'s, Position>, WriteStorage<'s, UiTransform>);
-    fn run(&mut self, (mut positions, mut transforms): Self::SystemData) {
+    fn run(&mut self, (positions, mut transforms): Self::SystemData) {
         for (position, mut transform) in (&positions, &mut transforms).join() {
             transform.local_x = position.x;
             transform.local_y = position.y;

@@ -1,0 +1,68 @@
+#![enable(implicit_some)]
+Custom(
+    Card(
+        item: Container(
+            transform: (
+                anchor: Middle,
+                width: 256.0,
+                height: 128.0,
+                x: 0.0,
+                y: 0.0,
+                mouse_reactive: true,
+            ),
+            background: NineSlice (
+                tex: File("sprites/sheet.png", ("IMAGE", ())),
+                x_start: 64,
+                y_start: 0,
+                width: 32,
+                height: 32,
+                left_dist: 5,
+                right_dist: 5,
+                top_dist: 5,
+                bottom_dist: 5,
+                texture_dimensions: (256, 256),
+            ),
+            children: [
+                Label (
+                    transform: (
+                        anchor: MiddleLeft,
+                        width: 128.,
+                        height: 32,
+                        x: 64.,
+                        y: 0.,
+                        mouse_reactive: true,
+                    ),
+                    text: (
+                        text: "Dump Bucket",
+                        font_size: 25.,
+                        color: (1., 1., 1., 1.),
+                        font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
+                    )
+                ),
+                Button (
+                    transform: (
+                        id: "fill_bucket",
+                        anchor: MiddleRight,
+                        width: 32.,
+                        height: 32,
+                        x: -16.,
+                        y: 0.,
+                        mouse_reactive: true,
+                    ),
+                    button: (
+                        normal_image: PartialTexture (
+                            tex: File("sprites/sheet.png", ("IMAGE", ())),
+                            left: 0.,
+                            top: 0.125,
+                            right: 0.125,
+                            bottom: 0.25,
+                        ),
+                        text: "",
+                        font_size: 0,
+                        normal_text_color: (1., 1., 1., 1.),
+                    ),
+                )
+            ]
+        )
+    )
+)

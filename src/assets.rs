@@ -9,9 +9,7 @@ use amethyst::renderer::ImageFormat;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Default, Deserialize, PrefabData)]
-pub struct DiggingPrefabData {
-    sprite_scene: Option<SpriteScenePrefab>,
-}
+pub struct DiggingPrefabData;
 
 pub fn load_prefab<'a>(
     world: &mut World,

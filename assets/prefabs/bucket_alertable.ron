@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 Custom(
     Alertable(
-        Container(
+        item: Container(
             transform: (
                 anchor: TopRight,
                 width: 128.0,
@@ -34,7 +34,7 @@ Custom(
                         opaque: false,
                     ),
                     text: (
-                        text: "Alert",
+                        text: "Bucket",
                         font_size: 25.,
                         color: (1., 1., 1., 1.),
                         font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
