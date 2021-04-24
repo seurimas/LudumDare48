@@ -220,18 +220,13 @@ impl SimpleState for GameplayState {
         data.world.insert(self.assets.0.clone());
         let dimensions = (*data.world.read_resource::<ScreenDimensions>()).clone();
         init_camera(data.world, &dimensions);
-        spawn_ui_widget(
-            data.world,
-            "prefabs/bucket.ron",
-            Position { x: 64., y: 64. },
-        );
-        spawn_ui_widget(data.world, "prefabs/bucket.ron", Position { x: 0., y: 0. });
-        spawn_ui_widget(
-            data.world,
-            "prefabs/bucket.ron",
-            Position { x: -64., y: -64. },
-        );
-        spawn_ui_widget(data.world, "prefabs/card.ron", Position { x: 0., y: 0. });
+        data.world.exec(|mut spawner: WidgetSpawner| {
+            spawner.spawn_ui_widget("prefabs/bucket.ron", Position { x: -16., y: 80. });
+            spawner.spawn_ui_widget("prefabs/bucket.ron", Position { x: -16., y: 48. });
+            spawner.spawn_ui_widget("prefabs/bucket.ron", Position { x: -16., y: 16. });
+            spawner.spawn_ui_widget("prefabs/card.ron", Position { x: 0., y: 0. });
+            spawner.spawn_ui_widget("prefabs/alertable.ron", Position { x: -64., y: -32. });
+        });
     }
 }
 

@@ -1,3 +1,4 @@
+use crate::cards::CardsBundle;
 use crate::widgets::WidgetPositioningSystem;
 use amethyst::{
     core::transform::TransformBundle,
@@ -42,6 +43,7 @@ fn main() -> amethyst::Result<()> {
                 .with_plugin(RenderUi::default())
                 .with_plugin(RenderFlat2D::default()),
         )?
+        .with_bundle(CardsBundle)?
         .with(WidgetPositioningSystem, "widget_pos", &[]);
 
     let mut game = Application::new(resources, state::LoadingState::new(), game_data)?;

@@ -2,6 +2,7 @@ pub use crate::widgets::*;
 pub use amethyst::{
     core::timing::Time,
     core::transform::Transform,
+    core::SystemBundle,
     ecs::*,
     error::Error,
     input::{
@@ -9,6 +10,7 @@ pub use amethyst::{
     },
     prelude::*,
     renderer::{sprite::SpriteSheetHandle, SpriteRender, SpriteSheet, Texture},
+    shred::ResourceId,
     ui::{
         Anchor, FontHandle, LineMode, Stretch, TtfFormat, UiButtonBuilder, UiImage, UiText,
         UiTransform,

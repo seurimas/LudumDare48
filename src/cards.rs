@@ -113,3 +113,20 @@ impl<'s> System<'s> for CardRenderingSystem {
         for card in cards.join() {}
     }
 }
+
+pub struct CardsBundle;
+
+impl SystemBundle<'_, '_> for CardsBundle {
+    fn build(
+        self,
+        world: &mut World,
+        dispatcher: &mut DispatcherBuilder<'_, '_>,
+    ) -> Result<(), Error> {
+        dispatcher.add(AlertableUpdateSystem, "alert_update", &[]);
+        dispatcher.add(AlertableRenderSystem, "alert_render", &["alert_update"]);
+        dispatcher.add(CardSpawningSystem, "card_spawn", &[]);
+        dispatcher.add(CardUpdateSystem, "card_update", &["card_spawn"]);
+        dispatcher.add(CardRenderingSystem, "card_render", &["card_update"]);
+        Ok(())
+    }
+}

@@ -1,6 +1,22 @@
 use crate::prelude::*;
-use amethyst::ui::UiCreator;
+use amethyst::ui::{ToNativeWidget, UiCreator, UiWidget};
 use serde::Deserialize;
+
+#[derive(Clone, Deserialize)]
+pub enum DiggingUi {
+    Alertable(UiWidget<DiggingUi>),
+    Card(UiWidget<DiggingUi>),
+}
+
+impl ToNativeWidget for DiggingUi {
+    type PrefabData = ();
+    fn to_native_widget(self, _: ()) -> (UiWidget<DiggingUi>, Self::PrefabData) {
+        match self {
+            DiggingUi::Card(item) => (item, ()),
+            DiggingUi::Alertable(item) => (item, ()),
+        }
+    }
+}
 
 #[derive(Component, Debug, Clone, Copy)]
 #[storage(DenseVecStorage)]
@@ -9,16 +25,20 @@ pub struct Position {
     pub y: f32,
 }
 
-pub fn spawn_ui_widget<'a>(world: &mut World, path: &'static str, position: Position) -> Entity {
-    world.exec(
-        |(mut creator, mut positions): (UiCreator, WriteStorage<'_, Position>)| {
-            let entity = creator.create(path, ());
-            positions
-                .insert(entity, position)
-                .expect("Unreachable: Entity was just created");
-            entity
-        },
-    )
+#[derive(SystemData)]
+pub struct WidgetSpawner<'a> {
+    creator: UiCreator<'a, DiggingUi>,
+    positions: WriteStorage<'a, Position>,
+}
+
+impl<'a> WidgetSpawner<'a> {
+    pub fn spawn_ui_widget(&mut self, path: &'static str, position: Position) -> Entity {
+        let entity = self.creator.create(path, ());
+        self.positions
+            .insert(entity, position)
+            .expect("Unreachable: Entity was just created");
+        entity
+    }
 }
 
 pub struct WidgetPositioningSystem;
