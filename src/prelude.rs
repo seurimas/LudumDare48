@@ -1,6 +1,10 @@
 pub use amethyst::{
+    core::timing::Time,
     core::transform::Transform,
-    input::{get_key, is_close_requested, is_key_down, VirtualKeyCode},
+    ecs::*,
+    input::{
+        get_key, is_close_requested, is_key_down, InputHandler, StringBindings, VirtualKeyCode,
+    },
     prelude::*,
     renderer::{SpriteRender, SpriteSheet},
     ui::{
