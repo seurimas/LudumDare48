@@ -11,6 +11,8 @@ use amethyst::{
     utils::application_root_dir,
 };
 
+mod cards;
+mod prelude;
 mod state;
 
 fn main() -> amethyst::Result<()> {
