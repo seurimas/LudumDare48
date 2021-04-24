@@ -1,3 +1,5 @@
+use crate::assets::*;
+use crate::prelude::*;
 use amethyst::{
     assets::{AssetStorage, Loader},
     core::transform::Transform,
@@ -206,4 +208,74 @@ pub fn create_ui_example(world: &mut World) {
             Anchor::TopLeft,
         ))
         .build();
+}
+
+struct GameplayState {
+    assets: GameAssets,
+}
+
+impl SimpleState for GameplayState {
+    fn on_start(&mut self, mut data: StateData<'_, GameData<'_, '_>>) {
+        data.world.delete_all();
+        data.world.insert(self.assets.0.clone());
+        let dimensions = (*data.world.read_resource::<ScreenDimensions>()).clone();
+        init_camera(data.world, &dimensions);
+        spawn_ui_widget(
+            data.world,
+            "prefabs/bucket.ron",
+            Position { x: 64., y: 64. },
+        );
+        spawn_ui_widget(data.world, "prefabs/bucket.ron", Position { x: 0., y: 0. });
+        spawn_ui_widget(
+            data.world,
+            "prefabs/bucket.ron",
+            Position { x: -64., y: -64. },
+        );
+        spawn_ui_widget(data.world, "prefabs/card.ron", Position { x: 0., y: 0. });
+    }
+}
+
+#[derive(Default)]
+pub struct LoadingState {
+    progress: Option<ProgressCounter>,
+    assets: Option<GameAssets>,
+}
+
+impl LoadingState {
+    pub fn new() -> Self {
+        LoadingState {
+            progress: None,
+            assets: None,
+        }
+    }
+}
+
+impl SimpleState for LoadingState {
+    fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
+        println!("Starting loading");
+        let mut progress_counter = ProgressCounter::new();
+
+        let master = load_spritesheet(
+            data.world,
+            "sprites/sheet".to_string(),
+            &mut progress_counter,
+        );
+        self.progress = Some(progress_counter);
+        self.assets = Some((SpriteStorage { master },));
+    }
+
+    fn update(&mut self, _data: &mut StateData<GameData>) -> SimpleTrans {
+        if let Some(progress) = &self.progress {
+            if !progress.errors().is_empty() {
+                println!("{:?}", progress);
+                return SimpleTrans::Quit;
+            }
+            if progress.is_complete() {
+                return SimpleTrans::Switch(Box::new(GameplayState {
+                    assets: self.assets.clone().unwrap(),
+                }));
+            }
+        }
+        SimpleTrans::None
+    }
 }

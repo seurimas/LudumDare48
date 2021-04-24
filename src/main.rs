@@ -1,3 +1,4 @@
+use crate::widgets::WidgetPositioningSystem;
 use amethyst::{
     core::transform::TransformBundle,
     input::{InputBundle, StringBindings},
@@ -11,9 +12,11 @@ use amethyst::{
     utils::application_root_dir,
 };
 
+mod assets;
 mod cards;
 mod prelude;
 mod state;
+mod widgets;
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
@@ -38,9 +41,10 @@ fn main() -> amethyst::Result<()> {
                 )
                 .with_plugin(RenderUi::default())
                 .with_plugin(RenderFlat2D::default()),
-        )?;
+        )?
+        .with(WidgetPositioningSystem, "widget_pos", &[]);
 
-    let mut game = Application::new(resources, state::MyState, game_data)?;
+    let mut game = Application::new(resources, state::LoadingState::new(), game_data)?;
     game.run();
 
     Ok(())

@@ -1,0 +1,17 @@
+#![enable(implicit_some)]
+Image(
+    transform: (
+        anchor: Middle,
+        width: 32.0,
+        height: 32.0,
+        x: 32.0,
+        y: 32.0,
+    ),
+    image: PartialTexture (
+        tex: File("sprites/sheet.png", ("IMAGE", ())),
+        left: 0.,
+        top: 0.,
+        right: 0.125,
+        bottom: 0.125,
+    ),
+)

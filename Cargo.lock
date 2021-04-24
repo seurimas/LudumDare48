@@ -102,14 +102,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "amethyst-starter-2d"
-version = "0.2.0"
-dependencies = [
- "amethyst",
- "log",
-]
-
-[[package]]
 name = "amethyst_animation"
 version = "0.15.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1019,6 +1011,15 @@ dependencies = [
  "proc-macro2 1.0.18",
  "quote 1.0.7",
  "syn 1.0.31",
+]
+
+[[package]]
+name = "digging_deeper"
+version = "0.0.1"
+dependencies = [
+ "amethyst",
+ "log",
+ "serde",
 ]
 
 [[package]]
