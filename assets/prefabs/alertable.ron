@@ -31,6 +31,7 @@ Custom(
                         x: 0.,
                         y: 0.,
                         mouse_reactive: false,
+                        opaque: false,
                     ),
                     text: (
                         text: "Alert",

@@ -8,7 +8,7 @@ use amethyst::renderer::sprite::SpriteSheetFormat;
 use amethyst::renderer::ImageFormat;
 use serde::Deserialize;
 
-#[derive(Debug, Clone, Deserialize, PrefabData)]
+#[derive(Debug, Clone, Default, Deserialize, PrefabData)]
 pub struct DiggingPrefabData {
     sprite_scene: Option<SpriteScenePrefab>,
 }

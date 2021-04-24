@@ -220,13 +220,50 @@ impl SimpleState for GameplayState {
         data.world.insert(self.assets.0.clone());
         let dimensions = (*data.world.read_resource::<ScreenDimensions>()).clone();
         init_camera(data.world, &dimensions);
-        data.world.exec(|mut spawner: WidgetSpawner| {
-            spawner.spawn_ui_widget("prefabs/bucket.ron", Position { x: -16., y: 80. });
-            spawner.spawn_ui_widget("prefabs/bucket.ron", Position { x: -16., y: 48. });
-            spawner.spawn_ui_widget("prefabs/bucket.ron", Position { x: -16., y: 16. });
-            spawner.spawn_ui_widget("prefabs/card.ron", Position { x: 0., y: 0. });
-            spawner.spawn_ui_widget("prefabs/alertable.ron", Position { x: -64., y: -32. });
-        });
+        data.world.exec(
+            |(mut spawner, mut alertables, mut buckets): (
+                WidgetSpawner,
+                WriteStorage<'_, crate::cards::Alertable>,
+                WriteStorage<'_, crate::digging::Bucket>,
+            )| {
+                for i in 0..16 {
+                    let bucket_entity = spawner.spawn_ui_widget(
+                        "prefabs/bucket.ron",
+                        Position {
+                            x: -16.,
+                            y: 16. + (i as f32 * 32.),
+                        },
+                    );
+                    buckets
+                        .insert(bucket_entity, crate::digging::Bucket { index: i })
+                        .expect("Unreachable, entity just created");
+                }
+                let alert_entity =
+                    spawner.spawn_ui_widget("prefabs/alertable.ron", Position { x: -64., y: -32. });
+                alertables
+                    .insert(
+                        alert_entity,
+                        crate::cards::Alertable {
+                            state: crate::cards::AlertState::Shovel,
+                            clicked: false,
+                        },
+                    )
+                    .expect("Unreachable: entity just created");
+                let bucket_alert_entity =
+                    spawner.spawn_ui_widget("prefabs/alertable.ron", Position { x: -64., y: -96. });
+                alertables
+                    .insert(
+                        bucket_alert_entity,
+                        crate::cards::Alertable {
+                            state: crate::cards::AlertState::Bucket(
+                                crate::cards::BucketAlertState::Empty,
+                            ),
+                            clicked: false,
+                        },
+                    )
+                    .expect("Unreachable: entity just created");
+            },
+        );
     }
 }
 

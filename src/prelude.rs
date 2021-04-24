@@ -1,8 +1,9 @@
+pub use crate::digging::DiggingStatus;
 pub use crate::widgets::*;
 pub use amethyst::{
     core::timing::Time,
     core::transform::Transform,
-    core::SystemBundle,
+    core::{HiddenPropagate, SystemBundle},
     ecs::*,
     error::Error,
     input::{
@@ -12,7 +13,8 @@ pub use amethyst::{
     renderer::{sprite::SpriteSheetHandle, SpriteRender, SpriteSheet, Texture},
     shred::ResourceId,
     ui::{
-        Anchor, FontHandle, LineMode, Stretch, TtfFormat, UiButtonBuilder, UiImage, UiText,
-        UiTransform,
+        Anchor, FontHandle, LineMode, Stretch, TtfFormat, UiButtonBuilder, UiEvent, UiEventType,
+        UiImage, UiText, UiTransform,
     },
 };
+pub use shrev::EventChannel;

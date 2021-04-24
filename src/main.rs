@@ -1,4 +1,5 @@
 use crate::cards::CardsBundle;
+use crate::digging::DiggingBundle;
 use crate::widgets::WidgetPositioningSystem;
 use amethyst::{
     core::transform::TransformBundle,
@@ -15,6 +16,7 @@ use amethyst::{
 
 mod assets;
 mod cards;
+mod digging;
 mod prelude;
 mod state;
 mod widgets;
@@ -44,6 +46,7 @@ fn main() -> amethyst::Result<()> {
                 .with_plugin(RenderFlat2D::default()),
         )?
         .with_bundle(CardsBundle)?
+        .with_bundle(DiggingBundle)?
         .with(WidgetPositioningSystem, "widget_pos", &[]);
 
     let mut game = Application::new(resources, state::LoadingState::new(), game_data)?;
