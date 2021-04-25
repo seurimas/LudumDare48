@@ -55,7 +55,7 @@ pub enum DrillState {
 }
 
 #[derive(Debug)]
-pub struct RobotState(String);
+pub struct RobotState(String, String);
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
@@ -97,6 +97,18 @@ impl<'s> System<'s> for AlertableUpdateSystem {
                 }
                 (DrillStatus::Idling, AlertState::Drill(DrillAlertState::Drilling(_))) => {
                     alertable.state = AlertState::Drill(DrillAlertState::Ready);
+                }
+                _ => {}
+            }
+            match (digging.robot_status, alertable.state) {
+                (
+                    RobotStatus::Running { .. },
+                    AlertState::Robot(RobotAlertState::CaptchaNeeded),
+                ) => {
+                    alertable.state = AlertState::Robot(RobotAlertState::Fetching);
+                }
+                (RobotStatus::Idling, AlertState::Robot(RobotAlertState::Fetching)) => {
+                    alertable.state = AlertState::Robot(RobotAlertState::CaptchaNeeded);
                 }
                 _ => {}
             }
@@ -171,7 +183,7 @@ impl<'s> System<'s> for CardSpawningSystem {
                     )),
                     AlertState::Robot(RobotAlertState::CaptchaNeeded) => Some((
                         "prefabs/robot_card.ron",
-                        DiggingCard::Robot(RobotState("".to_string())),
+                        DiggingCard::Robot(RobotState("Test".to_string(), "".to_string())),
                     )),
                     _ => None,
                 } {
@@ -211,13 +223,14 @@ impl<'s> System<'s> for CardInputSystem {
         Read<'s, InputHandler<StringBindings>>,
         ReadStorage<'s, Parent>,
         ReadStorage<'s, UiTransform>,
+        WriteStorage<'s, UiText>,
         Entities<'s>,
         Read<'s, Time>,
     );
 
     fn run(
         &mut self,
-        (events, mut digging, mut cards, input, parents, transforms, entities, time): Self::SystemData,
+        (events, mut digging, mut cards, input, parents, transforms, mut texts, entities, time): Self::SystemData,
     ) {
         /*
          Loop through cards, check the mouse state, and update the card.
@@ -228,6 +241,32 @@ impl<'s> System<'s> for CardInputSystem {
                 .and_then(|ent| cards.get_mut(ent).map(|card| (ent, card)))
             {
                 match card {
+                    DiggingCard::Robot(RobotState(captcha_value, current_value)) => {
+                        if event.event_type == UiEventType::ValueChange
+                            && get_ui_name(event.target, &transforms).eq("captcha_input")
+                        {
+                            *card = DiggingCard::Robot(RobotState(
+                                captcha_value.clone(),
+                                texts
+                                    .get(event.target)
+                                    .map(|ui| ui.text.clone())
+                                    .unwrap_or("".to_string()),
+                            ));
+                        } else if (event.event_type == UiEventType::ValueCommit
+                            && get_ui_name(event.target, &transforms).eq("captcha_input"))
+                            || (event.event_type == UiEventType::Click
+                                && get_ui_name(event.target, &transforms).eq("solve_captcha"))
+                        {
+                            if (*current_value).eq(captcha_value) {
+                                digging.solve_captcha();
+                                entities
+                                    .delete(ent)
+                                    .expect("Unreachable, entitity definitely exists");
+                            } else if let Some(mut text) = texts.get_mut(event.target) {
+                                text.text = "".to_string();
+                            }
+                        }
+                    }
                     DiggingCard::Shovel(_) => {
                         if event.event_type != UiEventType::Click {
                             continue;

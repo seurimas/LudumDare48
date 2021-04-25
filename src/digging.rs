@@ -4,15 +4,27 @@ pub const SCOOPS_PER_BLOCK: u32 = 4;
 pub const SCOOPS_PER_METER: u32 = 28;
 pub const BLOCKS_PER_METER: u32 = SCOOPS_PER_METER / SCOOPS_PER_BLOCK;
 pub const DRILL_METER: u32 = 1; // Raise before release.
-pub const PULLEY_METER: u32 = 2; // Raise before release.
 pub const DRILL_TIME: f32 = 10.; // Raise before release.
 pub const DRILL_SPEED: f32 = 4.; // Change before release.
+pub const ROBOT_METER: u32 = 2; // Raise before release.
+pub const ROBOT_TIME: f32 = 10.; // Raise before release.
+pub const ROBOT_SPEED: f32 = 0.5; // Change before release.
 
 #[derive(Clone, Copy)]
 pub enum DrillStatus {
     Locked,
     Idling,
     Running { time_left: f32, partial_scoops: f32 },
+}
+
+#[derive(Clone, Copy)]
+pub enum RobotStatus {
+    Locked,
+    Idling,
+    Running {
+        time_left: f32,
+        partial_buckets: f32,
+    },
 }
 
 pub struct DiggingStatus {
@@ -24,6 +36,7 @@ pub struct DiggingStatus {
     progression: u32,
     progress_checks: u32,
     pub drill_status: DrillStatus,
+    pub robot_status: RobotStatus,
 }
 
 #[derive(Component, Debug)]
@@ -43,16 +56,17 @@ impl Default for DiggingStatus {
             progression: 0,
             progress_checks: SCOOPS_PER_METER / 2,
             drill_status: DrillStatus::Locked,
+            robot_status: RobotStatus::Locked,
         }
     }
 }
 
 impl DiggingStatus {
     pub fn scoop(&mut self, shovel: bool) {
-        self.scoops = self.scoops + 1;
-        self.depth = self.depth + 1;
+        self.depth += 1;
         if shovel {
             self.time_since_shovel = 0.;
+            self.scoops += 1;
         }
     }
 
@@ -60,6 +74,13 @@ impl DiggingStatus {
         self.drill_status = DrillStatus::Running {
             time_left: DRILL_TIME,
             partial_scoops: 0.,
+        };
+    }
+
+    pub fn solve_captcha(&mut self) {
+        self.robot_status = RobotStatus::Running {
+            time_left: ROBOT_TIME,
+            partial_buckets: 0.,
         };
     }
 
@@ -214,6 +235,36 @@ impl<'s> System<'s> for DrillDiggingSystem {
     }
 }
 
+pub struct RobotRunningSystem;
+
+impl<'s> System<'s> for RobotRunningSystem {
+    // Also needed: Components for UI, not sure what we'll use yet.
+    type SystemData = (Write<'s, DiggingStatus>, Read<'s, Time>);
+    fn run(&mut self, (mut digging, time): Self::SystemData) {
+        let mut dumped = false;
+        if !digging.no_buckets() {
+            if let RobotStatus::Running {
+                time_left,
+                partial_buckets,
+            } = &mut digging.robot_status
+            {
+                *time_left -= time.delta_seconds();
+                *partial_buckets += ROBOT_SPEED * time.delta_seconds();
+                if *partial_buckets > 1. {
+                    *partial_buckets -= 1.;
+                    dumped = true;
+                }
+                if *time_left < 0. {
+                    digging.robot_status = RobotStatus::Idling;
+                }
+            }
+        }
+        if dumped {
+            digging.empty_bucket();
+        }
+    }
+}
+
 pub struct ProgressionSystem;
 
 impl<'s> System<'s> for ProgressionSystem {
@@ -243,8 +294,8 @@ impl<'s> System<'s> for ProgressionSystem {
                     )
                     .expect("Unreachable: entity just created");
             }
-            PULLEY_METER => {
-                println!("Unlocking robot!");
+            ROBOT_METER => {
+                digging.robot_status = RobotStatus::Idling;
                 let alert_entity = spawner.spawn_ui_widget(
                     "prefabs/robot_alertable.ron",
                     Position { x: -64., y: -224. },
@@ -279,6 +330,7 @@ impl SystemBundle<'_, '_> for DiggingBundle {
         dispatcher.add(BucketRenderSystem, "bucket_render", &[]);
         dispatcher.add(ProgressionSystem, "progression", &[]);
         dispatcher.add(DrillDiggingSystem, "drill_digging", &[]);
+        dispatcher.add(RobotRunningSystem, "robot_running", &[]);
         dispatcher.add(ShovelTimingSystem, "shovel_timing", &[]);
         Ok(())
     }

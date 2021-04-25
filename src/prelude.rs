@@ -1,7 +1,7 @@
 use crate::assets::SoundStorage;
 pub use crate::cards::Alertable;
 pub use crate::digging::{
-    DiggingStatus, DrillStatus, BLOCKS_PER_METER, SCOOPS_PER_BLOCK, SCOOPS_PER_METER,
+    DiggingStatus, DrillStatus, RobotStatus, BLOCKS_PER_METER, SCOOPS_PER_BLOCK, SCOOPS_PER_METER,
 };
 pub use crate::widgets::*;
 pub use amethyst::{

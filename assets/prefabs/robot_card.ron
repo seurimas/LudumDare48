@@ -60,7 +60,7 @@ Custom(
                         height: 48.,
                         x: -64.,
                         y: 6.,
-                        mouse_reactive: true,
+                        mouse_reactive: false,
                     ),
                     background: NineSlice (
                         tex: File("sprites/sheet.png", ("IMAGE", ())),
@@ -82,19 +82,19 @@ Custom(
                                 width: 128.,
                                 height: 32,
                                 x: 0.,
-                                y: -16.,
-                                mouse_reactive: false,
+                                y: 0.,
+                                selectable: 0,
                             ),
                             text: (
                                 text: "",
-                                font_size: 14.,
+                                font_size: 20.,
                                 color: (1., 1., 1., 1.),
                                 font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
-                                editable: (
-                                    max_length: 8,
+                                editable: TextEditingPrefab(
+                                    max_length: 5,
                                     selected_text_color: (0., 0., 0., 1.),
                                     selected_background_color: (0., 0., 1., 1.),
-                                    use_block_cursor: false,
+                                    use_block_cursor: true,
                                 )
                             )
                         )
