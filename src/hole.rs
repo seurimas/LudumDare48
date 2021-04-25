@@ -9,15 +9,40 @@ impl Tile for HoleTile {
     fn sprite(&self, point: Point3<u32>, world: &World) -> Option<usize> {
         let (digging,): (Read<DiggingStatus>,) = world.system_data();
         if point.y < digging.level() {
-            None
+            Some(4)
         } else if point.y > digging.level() {
             Some(0)
         } else if point.x < digging.current_block() {
-            None
+            Some(4)
         } else if point.x == digging.current_block() {
             Some(digging.current_block_height() as usize)
         } else {
             Some(0)
+        }
+    }
+}
+
+#[derive(Default, Clone)]
+pub struct SpriteTile;
+impl Tile for SpriteTile {
+    fn sprite(&self, point: Point3<u32>, world: &World) -> Option<usize> {
+        let (digging,): (Read<DiggingStatus>,) = world.system_data();
+        let block_index = digging.block_index();
+        let tile_index = point.y * BLOCKS_PER_METER + point.x;
+        if block_index > 0 && tile_index == block_index - 1 {
+            if digging.time_since_shovel < 0.125 {
+                Some(9)
+            } else {
+                Some(8)
+            }
+        } else if block_index >= BLOCKS_PER_METER && tile_index == block_index - BLOCKS_PER_METER {
+            match digging.drill_status {
+                DrillStatus::Locked => None,
+                DrillStatus::Running { .. } => Some(10),
+                DrillStatus::Idling => Some(11),
+            }
+        } else {
+            None
         }
     }
 }
@@ -33,6 +58,16 @@ pub fn spawn_hole(world: &mut World) {
     world
         .create_entity()
         .with(TileMap::<HoleTile, MortonEncoder2D>::new(
+            Vector3::<u32>::new(BLOCKS_PER_METER, 500, 1),
+            Vector3::<u32>::new(32, 32, 1),
+            Some(tilesheet.clone()),
+        ))
+        .with(transform.clone())
+        .build();
+    transform.set_translation_z(0.5);
+    world
+        .create_entity()
+        .with(TileMap::<SpriteTile, MortonEncoder2D>::new(
             Vector3::<u32>::new(BLOCKS_PER_METER, 500, 1),
             Vector3::<u32>::new(32, 32, 1),
             Some(tilesheet),

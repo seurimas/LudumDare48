@@ -6,6 +6,7 @@ pub const BLOCKS_PER_METER: u32 = SCOOPS_PER_METER / SCOOPS_PER_BLOCK;
 pub const DRILL_METER: u32 = 1; // Raise before release.
 pub const PULLEY_METER: u32 = 2; // Raise before release.
 pub const DRILL_TIME: f32 = 10.; // Raise before release.
+pub const DRILL_SPEED: f32 = 4.; // Change before release.
 
 #[derive(Clone, Copy)]
 pub enum DrillStatus {
@@ -17,6 +18,7 @@ pub enum DrillStatus {
 pub struct DiggingStatus {
     scoops: u32,
     scoops_per_bucket: u32,
+    pub time_since_shovel: f32,
     buckets: u32,
     depth: u32,
     progression: u32,
@@ -35,6 +37,7 @@ impl Default for DiggingStatus {
         DiggingStatus {
             scoops: 0,
             scoops_per_bucket: 8,
+            time_since_shovel: 1.,
             buckets: 3,
             depth: 0,
             progression: 0,
@@ -45,9 +48,12 @@ impl Default for DiggingStatus {
 }
 
 impl DiggingStatus {
-    pub fn scoop(&mut self) {
+    pub fn scoop(&mut self, shovel: bool) {
         self.scoops = self.scoops + 1;
         self.depth = self.depth + 1;
+        if shovel {
+            self.time_since_shovel = 0.;
+        }
     }
 
     pub fn drill(&mut self) {
@@ -83,6 +89,10 @@ impl DiggingStatus {
 
     pub fn level(&self) -> u32 {
         self.depth / SCOOPS_PER_METER
+    }
+
+    pub fn block_index(&self) -> u32 {
+        self.depth / SCOOPS_PER_BLOCK
     }
 
     pub fn current_block(&self) -> u32 {
@@ -164,6 +174,16 @@ impl<'s> System<'s> for BucketRenderSystem {
         }
     }
 }
+pub struct ShovelTimingSystem;
+
+impl<'s> System<'s> for ShovelTimingSystem {
+    // Also needed: Components for UI, not sure what we'll use yet.
+    type SystemData = (Write<'s, DiggingStatus>, Read<'s, Time>);
+    fn run(&mut self, (mut digging, time): Self::SystemData) {
+        digging.time_since_shovel += time.delta_seconds();
+    }
+}
+
 pub struct DrillDiggingSystem;
 
 impl<'s> System<'s> for DrillDiggingSystem {
@@ -171,23 +191,25 @@ impl<'s> System<'s> for DrillDiggingSystem {
     type SystemData = (Write<'s, DiggingStatus>, Read<'s, Time>);
     fn run(&mut self, (mut digging, time): Self::SystemData) {
         let mut scooped = false;
-        if let DrillStatus::Running {
-            time_left,
-            partial_scoops,
-        } = &mut digging.drill_status
-        {
-            *time_left -= time.delta_seconds();
-            *partial_scoops += time.delta_seconds();
-            if *partial_scoops > 1. {
-                *partial_scoops -= 1.;
-                scooped = true;
-            }
-            if *time_left < 0. {
-                digging.drill_status = DrillStatus::Idling;
+        if digging.can_scoop() {
+            if let DrillStatus::Running {
+                time_left,
+                partial_scoops,
+            } = &mut digging.drill_status
+            {
+                *time_left -= time.delta_seconds();
+                *partial_scoops += DRILL_SPEED * time.delta_seconds();
+                if *partial_scoops > 1. {
+                    *partial_scoops -= 1.;
+                    scooped = true;
+                }
+                if *time_left < 0. {
+                    digging.drill_status = DrillStatus::Idling;
+                }
             }
         }
         if scooped {
-            digging.scoop();
+            digging.scoop(false);
         }
     }
 }
@@ -255,6 +277,7 @@ impl SystemBundle<'_, '_> for DiggingBundle {
         dispatcher.add(BucketRenderSystem, "bucket_render", &[]);
         dispatcher.add(ProgressionSystem, "progression", &[]);
         dispatcher.add(DrillDiggingSystem, "drill_digging", &[]);
+        dispatcher.add(ShovelTimingSystem, "shovel_timing", &[]);
         Ok(())
     }
 }

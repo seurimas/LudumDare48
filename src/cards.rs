@@ -52,7 +52,7 @@ pub enum BucketState {
     Held(f32), // The player is holding the mouse button down, and the bucket is held for n seconds
     Finished(f32), // The player has gotten to the top, and the bucket is now emptying. Used for animation, perhaps.
 }
-const BUCKET_SUCCESS_TIME: f32 = 5.;
+const BUCKET_SUCCESS_TIME: f32 = 1.;
 
 #[derive(Debug)]
 pub enum DrillState {
@@ -116,7 +116,7 @@ impl<'s> System<'s> for AlertableUpdateSystem {
                     alertable.state = AlertState::Shovel(ShovelAlertState::NoBuckets);
                 }
                 (true, AlertState::Shovel(ShovelAlertState::NoBuckets)) => {
-                    alertable.state = AlertState::Shovel(ShovelAlertState::NoBuckets);
+                    alertable.state = AlertState::Shovel(ShovelAlertState::Ready);
                 }
                 _ => {}
             }
@@ -244,7 +244,7 @@ impl<'s> System<'s> for CardInputSystem {
                             continue;
                         }
                         if get_ui_name(event.target, &transforms).eq("shovel_dirt") {
-                            digging.scoop();
+                            digging.scoop(true);
                             if !digging.can_scoop() {
                                 entities
                                     .delete(ent)

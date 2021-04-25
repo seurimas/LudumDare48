@@ -1,6 +1,6 @@
 use crate::cards::CardsBundle;
 use crate::digging::DiggingBundle;
-use crate::hole::HoleTile;
+use crate::hole::{HoleTile, SpriteTile};
 use crate::widgets::WidgetPositioningSystem;
 use amethyst::tiles::RenderTiles2D;
 use amethyst::{
@@ -47,7 +47,8 @@ fn main() -> amethyst::Result<()> {
                 )
                 .with_plugin(RenderUi::default())
                 .with_plugin(RenderFlat2D::default())
-                .with_plugin(RenderTiles2D::<HoleTile>::default()),
+                .with_plugin(RenderTiles2D::<HoleTile>::default())
+                .with_plugin(RenderTiles2D::<SpriteTile>::default()),
         )?
         .with_bundle(CardsBundle)?
         .with_bundle(DiggingBundle)?
