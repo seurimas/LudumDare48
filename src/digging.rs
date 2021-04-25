@@ -244,16 +244,18 @@ impl<'s> System<'s> for ProgressionSystem {
                     .expect("Unreachable: entity just created");
             }
             PULLEY_METER => {
-                println!("Unlocking pulley!");
+                println!("Unlocking robot!");
                 let alert_entity = spawner.spawn_ui_widget(
-                    "prefabs/pulley_alertable.ron",
+                    "prefabs/robot_alertable.ron",
                     Position { x: -64., y: -224. },
                 );
                 alertables
                     .insert(
                         alert_entity,
                         crate::cards::Alertable {
-                            state: crate::cards::AlertState::Pulley(crate::cards::PulleyAlertState),
+                            state: crate::cards::AlertState::Robot(
+                                crate::cards::RobotAlertState::CaptchaNeeded,
+                            ),
                             clicked: false,
                         },
                     )
