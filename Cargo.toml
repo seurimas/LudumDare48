@@ -1,14 +1,15 @@
 [package]
-name = "digging_deeper"
-version = "0.0.1"
 authors = ["Seurimas <mtgathering2000@hotmail.com>", "BasicDays"]
 edition = "2018"
+name = "digging_deeper"
+version = "0.0.1"
 
 [dependencies]
 amethyst = {version = "0.15.3", features = ["amethyst_tiles", "tiles", "no-slow-safety-checks"]}
-log = { version = "0.4.8", features = ["serde"] }
-serde = { version = "1.0", features = ["derive"] }
+captcha = "0.0.8"
+log = {version = "0.4.8", features = ["serde"]}
 rand = "0.8.3"
+serde = {version = "1.0", features = ["derive"]}
 
 [features]
 default = ["vulkan"]

@@ -2,6 +2,8 @@ use super::DiggingCard;
 use crate::prelude::*;
 use log::info;
 
+pub const BUCKET_SUCCESS_TIME: f32 = 1.;
+
 #[derive(Debug, Clone, Copy)]
 pub enum BucketAlertState {
     Empty,       // Don't do anything funky.
@@ -15,7 +17,6 @@ pub enum BucketState {
     Held(f32), // The player is holding the mouse button down, and the bucket is held for n seconds
     Finished(f32), // The player has gotten to the top, and the bucket is now emptying. Used for animation, perhaps.
 }
-pub const BUCKET_SUCCESS_TIME: f32 = 1.;
 
 pub struct BucketUpdateSystem;
 
