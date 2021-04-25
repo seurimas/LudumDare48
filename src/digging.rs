@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use amethyst::renderer::Camera;
 
 pub const SCOOPS_PER_BLOCK: u32 = 4;
 pub const SCOOPS_PER_METER: u32 = 28;
@@ -160,6 +161,37 @@ impl<'s> System<'s> for DepthRenderSystem {
             .and_then(|ent| texts.get_mut(ent))
         {
             text.text = format!("Current Depth: {}", digging.get_depth_string());
+        }
+    }
+}
+
+pub struct DepthCameraSystem;
+
+impl<'s> System<'s> for DepthCameraSystem {
+    // Also needed: Components for UI, not sure what we'll use yet.
+    type SystemData = (
+        Read<'s, DiggingStatus>,
+        ReadStorage<'s, Camera>,
+        WriteStorage<'s, Transform>,
+        Read<'s, Time>,
+    );
+
+    fn run(&mut self, (digging, cameras, mut transforms, time): Self::SystemData) {
+        for (camera, mut transform) in (&cameras, &mut transforms).join() {
+            let distance = transform.translation().y - digging.level() as f32 * -32.;
+            if distance > 0. {
+                if distance > 128. {
+                    transform
+                        .set_translation_y(transform.translation().y - time.delta_seconds() * 8.);
+                } else if distance > 64. {
+                    transform
+                        .set_translation_y(transform.translation().y - time.delta_seconds() * 4.);
+                } else if distance > 1. {
+                    transform.set_translation_y(transform.translation().y - time.delta_seconds());
+                } else {
+                    transform.set_translation_y(digging.level() as f32 * -32.);
+                }
+            }
         }
     }
 }
@@ -369,6 +401,7 @@ impl SystemBundle<'_, '_> for DiggingBundle {
         dispatcher: &mut DispatcherBuilder<'_, '_>,
     ) -> Result<(), Error> {
         world.insert(DiggingStatus::default());
+        dispatcher.add(DepthCameraSystem, "depth_camera", &[]);
         dispatcher.add(DepthRenderSystem, "depth_render", &[]);
         dispatcher.add(RobotRenderSystem, "robot_render", &[]);
         dispatcher.add(BucketRenderSystem, "bucket_render", &[]);
