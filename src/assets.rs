@@ -64,6 +64,16 @@ pub struct SpriteStorage {
 #[derive(Clone)]
 pub struct SoundStorage {
     pub main_theme: SourceHandle,
+    pub shovel: SourceHandle,
+    pub empty_bucket: SourceHandle,
+    pub drill_spin: SourceHandle,
+    pub drill_start: SourceHandle,
+    pub drill_unlock: SourceHandle,
+    pub robot_captcha: SourceHandle,
+    pub robot_captcha_fail: SourceHandle,
+    pub robot_captcha_success: SourceHandle,
+    pub robot_captcha_key: SourceHandle,
+    pub robot_unlock: SourceHandle,
 }
 
 pub type GameAssets = (SpriteStorage, SoundStorage);
