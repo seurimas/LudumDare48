@@ -256,41 +256,27 @@ impl<'s> System<'s> for CardInputSystem {
                             }
                         }
                     }
-                    DiggingCard::Bucket(bucket) => match bucket {
-                        BucketState::Empty | BucketState::Unheld(_) => {
-                            if event.event_type == UiEventType::ClickStart
-                                && get_ui_name(event.target, &transforms).eq("fill_bucket")
-                            {
-                                *card = DiggingCard::Bucket(BucketState::Held(0.));
-                            }
-                        }
-                        BucketState::Held(progress) => {
-                            if event.event_type == UiEventType::HoverStop
-                                || !get_ui_name(event.target, &transforms).eq("fill_bucket")
-                            {
-                                info!("unheld");
-                                *card = DiggingCard::Bucket(BucketState::Unheld(*progress));
-                            } else {
-                                info!("held {}", progress);
-                                *progress = *progress + time.delta_seconds();
-                                if *progress > BUCKET_SUCCESS_TIME {
-                                    digging.empty_bucket();
-                                    if digging.no_buckets() {
-                                        info!("cleared buckets");
-                                        *card = DiggingCard::Bucket(BucketState::Finished(1.));
-                                    } else {
-                                        info!("cleared 1 bucket");
-                                        *card = DiggingCard::Bucket(BucketState::Unheld(*progress));
-                                    }
+                    DiggingCard::Bucket(bucket) => {
+                        let is_targeted = get_ui_name(event.target, &transforms).eq("fill_bucket");
+                        match bucket {
+                            BucketState::Empty | BucketState::Unheld(_) => {
+                                if event.event_type == UiEventType::ClickStart && is_targeted {
+                                    info!("held bucket");
+                                    *card = DiggingCard::Bucket(BucketState::Held(0.));
                                 }
                             }
+                            BucketState::Held(progress) => {
+                                if event.event_type == UiEventType::HoverStop
+                                    || event.event_type == UiEventType::ClickStop
+                                    || !is_targeted
+                                {
+                                    info!("let go of bucket");
+                                    *card = DiggingCard::Bucket(BucketState::Unheld(*progress));
+                                }
+                            }
+                            _ => {}
                         }
-                        BucketState::Finished(_) => {
-                            entities
-                                .delete(ent)
-                                .expect("Unreachable, entitity definitely exists");
-                        }
-                    },
+                    }
                     _ => {}
                 }
             }
@@ -347,6 +333,45 @@ impl<'s> System<'s> for DrillUpdateSystem {
                             .delete(entity)
                             .expect("Unreachable, entitity definitely exists");
                     }
+                }
+            }
+        }
+    }
+}
+
+pub struct BucketUpdateSystem;
+
+impl<'s> System<'s> for BucketUpdateSystem {
+    type SystemData = (
+        Write<'s, DiggingStatus>,
+        WriteStorage<'s, DiggingCard>,
+        Entities<'s>,
+        Read<'s, Time>,
+    );
+    fn run(&mut self, (mut digging, mut cards, entities, time): Self::SystemData) {
+        for (card, entity) in (&mut cards, &entities).join() {
+            if let DiggingCard::Bucket(state) = card {
+                match state {
+                    BucketState::Held(progress) => {
+                        *progress = *progress + time.delta_seconds();
+                        if *progress > BUCKET_SUCCESS_TIME {
+                            digging.empty_bucket();
+                            if digging.no_buckets() {
+                                info!("cleared buckets");
+                                *card = DiggingCard::Bucket(BucketState::Finished(1.));
+                            } else {
+                                info!("cleared 1 bucket");
+                                *card = DiggingCard::Bucket(BucketState::Unheld(*progress));
+                            }
+                        }
+                    }
+                    BucketState::Finished(_) => {
+                        info!("destroy all buckets");
+                        entities
+                            .delete(entity)
+                            .expect("Unreachable, entitity definitely exists");
+                    }
+                    _ => {}
                 }
             }
         }
@@ -466,6 +491,7 @@ impl SystemBundle<'_, '_> for CardsBundle {
             &[],
         );
         dispatcher.add(DrillUpdateSystem, "drill_update", &["card_input"]);
+        dispatcher.add(BucketUpdateSystem, "bucket_update", &["card_input"]);
         dispatcher.add(ShovelRenderingSystem, "shovel_render", &["card_input"]);
         dispatcher.add(DrillRenderingSystem, "drill_render", &["drill_update"]);
         Ok(())
