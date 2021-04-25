@@ -76,15 +76,96 @@ pub struct SoundPlayer<'a> {
 }
 
 impl<'a> SoundPlayer<'a> {
-    // pub fn player_hit(&self) {
-    //     if let Some(ref output) = self.output.as_ref() {
-    //         if let Some(ref sounds) = self.storage.as_ref() {
-    //             if let Some(sound) = self.sources.get(&sounds.player_hit.clone()) {
-    //                 output.play_once(sound, 0.75);
-    //             }
-    //         }
-    //     }
-    // }
+    pub fn shovel(&self) {
+        if let Some(ref output) = self.output.as_ref() {
+            if let Some(ref sounds) = self.storage.as_ref() {
+                if let Some(sound) = self.sources.get(&sounds.shovel.clone()) {
+                    output.play_once(sound, 1.);
+                }
+            }
+        }
+    }
+    pub fn empty_bucket(&self) {
+        if let Some(ref output) = self.output.as_ref() {
+            if let Some(ref sounds) = self.storage.as_ref() {
+                if let Some(sound) = self.sources.get(&sounds.empty_bucket.clone()) {
+                    output.play_once(sound, 1.);
+                }
+            }
+        }
+    }
+    pub fn drill_spin(&self) {
+        if let Some(ref output) = self.output.as_ref() {
+            if let Some(ref sounds) = self.storage.as_ref() {
+                if let Some(sound) = self.sources.get(&sounds.drill_spin.clone()) {
+                    output.play_once(sound, 1.);
+                }
+            }
+        }
+    }
+    pub fn drill_start(&self) {
+        if let Some(ref output) = self.output.as_ref() {
+            if let Some(ref sounds) = self.storage.as_ref() {
+                if let Some(sound) = self.sources.get(&sounds.drill_start.clone()) {
+                    output.play_once(sound, 1.);
+                }
+            }
+        }
+    }
+    pub fn drill_unlock(&self) {
+        if let Some(ref output) = self.output.as_ref() {
+            if let Some(ref sounds) = self.storage.as_ref() {
+                if let Some(sound) = self.sources.get(&sounds.drill_unlock.clone()) {
+                    output.play_once(sound, 1.);
+                }
+            }
+        }
+    }
+    pub fn robot_captcha(&self) {
+        if let Some(ref output) = self.output.as_ref() {
+            if let Some(ref sounds) = self.storage.as_ref() {
+                if let Some(sound) = self.sources.get(&sounds.robot_captcha.clone()) {
+                    output.play_once(sound, 1.);
+                }
+            }
+        }
+    }
+    pub fn robot_captcha_key(&self) {
+        if let Some(ref output) = self.output.as_ref() {
+            if let Some(ref sounds) = self.storage.as_ref() {
+                if let Some(sound) = self.sources.get(&sounds.robot_captcha_key.clone()) {
+                    output.play_once(sound, 1.);
+                }
+            }
+        }
+    }
+    pub fn robot_captcha_fail(&self) {
+        if let Some(ref output) = self.output.as_ref() {
+            if let Some(ref sounds) = self.storage.as_ref() {
+                if let Some(sound) = self.sources.get(&sounds.robot_captcha_fail.clone()) {
+                    output.play_once(sound, 1.);
+                }
+            }
+        }
+    }
+    pub fn robot_captcha_success(&self) {
+        if let Some(ref output) = self.output.as_ref() {
+            if let Some(ref sounds) = self.storage.as_ref() {
+                if let Some(sound) = self.sources.get(&sounds.robot_captcha_success.clone()) {
+                    output.play_once(sound, 1.);
+                }
+            }
+        }
+    }
+    pub fn robot_unlock(&self) {
+        if let Some(ref output) = self.output.as_ref() {
+            if let Some(ref sounds) = self.storage.as_ref() {
+                if let Some(sound) = self.sources.get(&sounds.robot_unlock.clone()) {
+                    output.play_once(sound, 1.);
+                }
+            }
+        }
+    }
     pub fn play_main_theme(&self, sink: &amethyst::audio::AudioSink) {
         if let Some(ref sounds) = self.storage.as_ref() {
             if let Some(sound) = self.sources.get(&sounds.main_theme.clone()) {

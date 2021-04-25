@@ -26,8 +26,9 @@ impl<'s> System<'s> for BucketUpdateSystem {
         WriteStorage<'s, DiggingCard>,
         Entities<'s>,
         Read<'s, Time>,
+        SoundPlayer<'s>,
     );
-    fn run(&mut self, (mut digging, mut cards, entities, time): Self::SystemData) {
+    fn run(&mut self, (mut digging, mut cards, entities, time, sounds): Self::SystemData) {
         for (card, entity) in (&mut cards, &entities).join() {
             if let DiggingCard::Bucket(state) = card {
                 match state {
@@ -35,6 +36,7 @@ impl<'s> System<'s> for BucketUpdateSystem {
                         *progress = *progress + time.delta_seconds();
                         if *progress > BUCKET_SUCCESS_TIME {
                             digging.empty_bucket();
+                            sounds.empty_bucket();
                             if digging.no_buckets() {
                                 info!("cleared buckets");
                                 *card = DiggingCard::Bucket(BucketState::Finished(1.));

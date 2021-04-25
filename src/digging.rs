@@ -314,8 +314,8 @@ pub struct RobotRunningSystem;
 
 impl<'s> System<'s> for RobotRunningSystem {
     // Also needed: Components for UI, not sure what we'll use yet.
-    type SystemData = (Write<'s, DiggingStatus>, Read<'s, Time>);
-    fn run(&mut self, (mut digging, time): Self::SystemData) {
+    type SystemData = (Write<'s, DiggingStatus>, Read<'s, Time>, SoundPlayer<'s>);
+    fn run(&mut self, (mut digging, time, sounds): Self::SystemData) {
         let mut dumped = false;
         if !digging.no_buckets() {
             if let RobotStatus::Running {
@@ -330,6 +330,7 @@ impl<'s> System<'s> for RobotRunningSystem {
                     dumped = true;
                 }
                 if *time_left < 0. {
+                    sounds.robot_captcha();
                     digging.robot_status = RobotStatus::Idling;
                 }
             }
@@ -348,10 +349,12 @@ impl<'s> System<'s> for ProgressionSystem {
         Write<'s, DiggingStatus>,
         WriteStorage<'s, Alertable>,
         WidgetSpawner<'s>,
+        SoundPlayer<'s>,
     );
-    fn run(&mut self, (mut digging, mut alertables, mut spawner): Self::SystemData) {
+    fn run(&mut self, (mut digging, mut alertables, mut spawner, sounds): Self::SystemData) {
         match digging.progress() {
             DRILL_METER => {
+                sounds.drill_unlock();
                 digging.drill_status = DrillStatus::Idling;
                 let alert_entity = spawner.spawn_ui_widget(
                     "prefabs/drill_alertable.ron",
@@ -370,6 +373,7 @@ impl<'s> System<'s> for ProgressionSystem {
                     .expect("Unreachable: entity just created");
             }
             ROBOT_METER => {
+                sounds.robot_unlock();
                 digging.robot_status = RobotStatus::Idling;
                 let alert_entity = spawner.spawn_ui_widget(
                     "prefabs/robot_alertable.ron",

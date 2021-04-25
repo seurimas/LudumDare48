@@ -137,13 +137,75 @@ impl SimpleState for LoadingState {
             "audio/DiggingDeeper.wav".to_string(),
             &mut progress_counter,
         );
+        let shovel = load_sound_file(
+            data.world,
+            "audio/shovel.wav".to_string(),
+            &mut progress_counter,
+        );
+        let empty_bucket = load_sound_file(
+            data.world,
+            "audio/empty_bucket.wav".to_string(),
+            &mut progress_counter,
+        );
+        let drill_spin = load_sound_file(
+            data.world,
+            "audio/drill_spin.wav".to_string(),
+            &mut progress_counter,
+        );
+        let drill_start = load_sound_file(
+            data.world,
+            "audio/drill_start.wav".to_string(),
+            &mut progress_counter,
+        );
+        let drill_unlock = load_sound_file(
+            data.world,
+            "audio/drill_unlock.wav".to_string(),
+            &mut progress_counter,
+        );
+        let robot_captcha = load_sound_file(
+            data.world,
+            "audio/robot_captcha.wav".to_string(),
+            &mut progress_counter,
+        );
+        let robot_captcha_success = load_sound_file(
+            data.world,
+            "audio/robot_captcha_success.wav".to_string(),
+            &mut progress_counter,
+        );
+        let robot_captcha_fail = load_sound_file(
+            data.world,
+            "audio/robot_captcha_fail.wav".to_string(),
+            &mut progress_counter,
+        );
+        let robot_captcha_key = load_sound_file(
+            data.world,
+            "audio/robot_captcha_key.wav".to_string(),
+            &mut progress_counter,
+        );
+        let robot_unlock = load_sound_file(
+            data.world,
+            "audio/robot_unlock.wav".to_string(),
+            &mut progress_counter,
+        );
         self.progress = Some(progress_counter);
         self.assets = Some((
             SpriteStorage {
                 master,
                 tile_spritesheet,
             },
-            SoundStorage { main_theme },
+            SoundStorage {
+                main_theme,
+                shovel,
+                empty_bucket,
+                drill_spin,
+                drill_start,
+                drill_unlock,
+                robot_captcha,
+                robot_captcha_success,
+                robot_captcha_fail,
+                robot_captcha_key,
+                robot_unlock,
+            },
         ));
 
         init_output(data.world);

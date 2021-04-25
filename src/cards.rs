@@ -226,11 +226,23 @@ impl<'s> System<'s> for CardInputSystem {
         WriteStorage<'s, UiText>,
         Entities<'s>,
         Read<'s, Time>,
+        SoundPlayer<'s>,
     );
 
     fn run(
         &mut self,
-        (events, mut digging, mut cards, input, parents, transforms, mut texts, entities, time): Self::SystemData,
+        (
+            events,
+            mut digging,
+            mut cards,
+            input,
+            parents,
+            transforms,
+            mut texts,
+            entities,
+            time,
+            sounds,
+        ): Self::SystemData,
     ) {
         /*
          Loop through cards, check the mouse state, and update the card.
@@ -245,6 +257,7 @@ impl<'s> System<'s> for CardInputSystem {
                         if event.event_type == UiEventType::ValueChange
                             && get_ui_name(event.target, &transforms).eq("captcha_input")
                         {
+                            sounds.robot_captcha_key();
                             *card = DiggingCard::Robot(RobotState(
                                 captcha_value.clone(),
                                 texts
@@ -258,12 +271,18 @@ impl<'s> System<'s> for CardInputSystem {
                                 && get_ui_name(event.target, &transforms).eq("solve_captcha"))
                         {
                             if (*current_value).eq(captcha_value) {
+                                sounds.robot_captcha_success();
                                 digging.solve_captcha();
                                 entities
                                     .delete(ent)
                                     .expect("Unreachable, entitity definitely exists");
-                            } else if let Some(mut text) = texts.get_mut(event.target) {
-                                text.text = "".to_string();
+                            } else {
+                                for (transform, text) in (&transforms, &mut texts).join() {
+                                    if transform.id.eq("captcha_input") {
+                                        sounds.robot_captcha_fail();
+                                        text.text = "".to_string();
+                                    }
+                                }
                             }
                         }
                     }
@@ -272,6 +291,7 @@ impl<'s> System<'s> for CardInputSystem {
                             continue;
                         }
                         if get_ui_name(event.target, &transforms).eq("shovel_dirt") {
+                            sounds.shovel();
                             digging.scoop(true);
                             if !digging.can_scoop() {
                                 entities
@@ -299,6 +319,7 @@ impl<'s> System<'s> for CardInputSystem {
                                             random::<f32>() * 10.,
                                         ),
                                     });
+                                    sounds.drill_spin();
                                 }
                             }
                         }
@@ -339,8 +360,9 @@ impl<'s> System<'s> for DrillUpdateSystem {
         WriteStorage<'s, DiggingCard>,
         Entities<'s>,
         Read<'s, Time>,
+        SoundPlayer<'s>,
     );
-    fn run(&mut self, (mut digging, mut cards, entities, time): Self::SystemData) {
+    fn run(&mut self, (mut digging, mut cards, entities, time, sounds): Self::SystemData) {
         for (card, entity) in (&mut cards, &entities).join() {
             if let DiggingCard::Drill(DrillState::Running { position, velocity }) = card {
                 position.0 += velocity.0 * time.delta_seconds();
@@ -376,6 +398,7 @@ impl<'s> System<'s> for DrillUpdateSystem {
                         && position.2 > 0.25
                         && position.2 < 0.75
                     {
+                        sounds.drill_start();
                         digging.drill();
                         entities
                             .delete(entity)
