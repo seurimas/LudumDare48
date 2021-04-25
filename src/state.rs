@@ -3,6 +3,7 @@ use crate::hole::spawn_hole;
 use crate::prelude::*;
 use amethyst::{
     assets::{AssetStorage, Loader},
+    audio::output::init_output,
     core::transform::Transform,
     input::{get_key, is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
@@ -37,6 +38,7 @@ impl SimpleState for GameplayState {
     fn on_start(&mut self, mut data: StateData<'_, GameData<'_, '_>>) {
         data.world.delete_all();
         data.world.insert(self.assets.0.clone());
+        data.world.insert(self.assets.1.clone());
         let dimensions = (*data.world.read_resource::<ScreenDimensions>()).clone();
         init_camera(data.world, &dimensions);
         spawn_hole(data.world);
@@ -124,11 +126,21 @@ impl SimpleState for LoadingState {
             "sprites/tiles".to_string(),
             &mut progress_counter,
         );
+        let main_theme = load_sound_file(
+            data.world,
+            "audio/DiggingDeeper.wav".to_string(),
+            &mut progress_counter,
+        );
         self.progress = Some(progress_counter);
-        self.assets = Some((SpriteStorage {
-            master,
-            tile_spritesheet,
-        },));
+        self.assets = Some((
+            SpriteStorage {
+                master,
+                tile_spritesheet,
+            },
+            SoundStorage { main_theme },
+        ));
+
+        init_output(data.world);
     }
 
     fn update(&mut self, _data: &mut StateData<GameData>) -> SimpleTrans {

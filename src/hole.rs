@@ -20,6 +20,10 @@ impl Tile for HoleTile {
             Some(0)
         }
     }
+
+    fn tint(&self, coordinates: Point3<u32>, world: &World) -> Srgba {
+        Srgba::new(1.0, 1.0, 1.0, 1.0)
+    }
 }
 
 #[derive(Default, Clone)]

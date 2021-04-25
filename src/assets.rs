@@ -2,6 +2,7 @@ use crate::prelude::*;
 pub use amethyst::assets::{
     AssetStorage, Handle, Loader, Prefab, PrefabData, PrefabLoader, ProgressCounter, RonFormat,
 };
+use amethyst::audio::WavFormat;
 use amethyst::derive::PrefabData;
 use amethyst::renderer::sprite::prefab::SpriteScenePrefab;
 use amethyst::renderer::sprite::SpriteSheetFormat;
@@ -45,10 +46,24 @@ pub fn load_spritesheet<'a>(
     )
 }
 
+pub fn load_sound_file<'a>(
+    world: &mut World,
+    path: String,
+    progress: &'a mut ProgressCounter,
+) -> SourceHandle {
+    let loader = world.read_resource::<Loader>();
+    loader.load(path, WavFormat, (), &world.read_resource())
+}
+
 #[derive(Clone)]
 pub struct SpriteStorage {
     pub master: SpriteSheetHandle,
     pub tile_spritesheet: SpriteSheetHandle,
 }
 
-pub type GameAssets = (SpriteStorage,);
+#[derive(Clone)]
+pub struct SoundStorage {
+    pub main_theme: SourceHandle,
+}
+
+pub type GameAssets = (SpriteStorage, SoundStorage);

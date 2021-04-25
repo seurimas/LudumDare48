@@ -1,10 +1,12 @@
+use crate::assets::SoundStorage;
 pub use crate::cards::Alertable;
 pub use crate::digging::{
     DiggingStatus, DrillStatus, BLOCKS_PER_METER, SCOOPS_PER_BLOCK, SCOOPS_PER_METER,
 };
 pub use crate::widgets::*;
 pub use amethyst::{
-    assets::PrefabData,
+    assets::{AssetStorage, PrefabData},
+    audio::{output::Output, Source, SourceHandle},
     core::timing::Time,
     core::transform::Transform,
     core::{HiddenPropagate, Parent, SystemBundle},
@@ -15,6 +17,7 @@ pub use amethyst::{
         get_key, is_close_requested, is_key_down, InputHandler, StringBindings, VirtualKeyCode,
     },
     prelude::*,
+    renderer::palette::Srgba,
     renderer::{sprite::SpriteSheetHandle, SpriteRender, SpriteSheet, Texture},
     shred::ResourceId,
     ui::{
@@ -61,6 +64,49 @@ pub fn update_texture(
         }
         if let Some(new_bottom) = new_bottom {
             *bottom = new_bottom;
+        }
+    }
+}
+
+#[derive(SystemData)]
+pub struct SoundPlayer<'a> {
+    storage: Option<Read<'a, SoundStorage>>,
+    output: Option<Read<'a, Output>>,
+    sources: Read<'a, AssetStorage<Source>>,
+}
+
+impl<'a> SoundPlayer<'a> {
+    // pub fn player_hit(&self) {
+    //     if let Some(ref output) = self.output.as_ref() {
+    //         if let Some(ref sounds) = self.storage.as_ref() {
+    //             if let Some(sound) = self.sources.get(&sounds.player_hit.clone()) {
+    //                 output.play_once(sound, 0.75);
+    //             }
+    //         }
+    //     }
+    // }
+    pub fn play_main_theme(&self, sink: &amethyst::audio::AudioSink) {
+        if let Some(ref sounds) = self.storage.as_ref() {
+            if let Some(sound) = self.sources.get(&sounds.main_theme.clone()) {
+                sink.append(sound);
+            }
+        }
+    }
+}
+
+pub struct DjSystem;
+
+impl<'a> System<'a> for DjSystem {
+    type SystemData = (
+        Option<Read<'a, amethyst::audio::AudioSink>>,
+        SoundPlayer<'a>,
+    );
+
+    fn run(&mut self, (sink, player): Self::SystemData) {
+        if let Some(ref sink) = sink {
+            if sink.empty() {
+                player.play_main_theme(sink);
+            }
         }
     }
 }

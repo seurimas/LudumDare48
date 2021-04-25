@@ -1,9 +1,11 @@
 use crate::cards::CardsBundle;
 use crate::digging::DiggingBundle;
 use crate::hole::{HoleTile, SpriteTile};
+use crate::prelude::DjSystem;
 use crate::widgets::WidgetPositioningSystem;
 use amethyst::tiles::RenderTiles2D;
 use amethyst::{
+    audio::AudioBundle,
     core::transform::TransformBundle,
     input::{InputBundle, StringBindings},
     prelude::*,
@@ -50,8 +52,10 @@ fn main() -> amethyst::Result<()> {
                 .with_plugin(RenderTiles2D::<HoleTile>::default())
                 .with_plugin(RenderTiles2D::<SpriteTile>::default()),
         )?
+        .with_bundle(AudioBundle::default())?
         .with_bundle(CardsBundle)?
         .with_bundle(DiggingBundle)?
+        .with(DjSystem, "dj", &[])
         .with(WidgetPositioningSystem, "widget_pos", &[]);
 
     let mut game = Application::new(resources, state::LoadingState::new(), game_data)?;
