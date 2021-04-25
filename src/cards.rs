@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use log::info;
 
 #[derive(Debug)]
 pub enum BucketAlertState {
@@ -31,9 +32,10 @@ pub struct ShovelState {
 pub enum BucketState {
     Empty,
     Unheld(f32), // The player is not holding the mouse button down, and the bucket is .0 percent of the way to the top
-    Held(f32), // The player is holding the mouse button down, and the bucket is .0 percent of the way to the top
+    Held(f32), // The player is holding the mouse button down, and the bucket is held for n seconds
     Finished(f32), // The player has gotten to the top, and the bucket is now emptying. Used for animation, perhaps.
 }
+const BUCKET_SUCCESS_TIME: f32 = 5.;
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
@@ -165,25 +167,26 @@ impl<'s> System<'s> for CardUpdateSystem {
         ReadStorage<'s, Parent>,
         ReadStorage<'s, UiTransform>,
         Entities<'s>,
+        Read<'s, Time>,
     );
 
     fn run(
         &mut self,
-        (events, mut digging, mut cards, input, parents, transforms, entities): Self::SystemData,
+        (events, mut digging, mut cards, input, parents, transforms, entities, time): Self::SystemData,
     ) {
         /*
          Loop through cards, check the mouse state, and update the card.
          We may need some sort of abstraction here (DiggingCard implements its own update function?) or just a simple match block.
         */
         for event in events.read(&mut self.reader_id) {
-            if event.event_type != UiEventType::Click {
-                continue;
-            }
             if let Some((ent, mut card)) = get_card_entity(event.target, &cards, &parents)
                 .and_then(|ent| cards.get_mut(ent).map(|card| (ent, card)))
             {
                 match card {
                     DiggingCard::Shovel(_) => {
+                        if event.event_type != UiEventType::Click {
+                            continue;
+                        }
                         if get_ui_name(event.target, &transforms).eq("shovel_dirt") {
                             digging.scoop();
                             if !digging.can_scoop() {
@@ -193,16 +196,41 @@ impl<'s> System<'s> for CardUpdateSystem {
                             }
                         }
                     }
-                    DiggingCard::Bucket(_) => {
-                        if get_ui_name(event.target, &transforms).eq("fill_bucket") {
-                            digging.empty_bucket();
-                            if digging.no_buckets() {
-                                entities
-                                    .delete(ent)
-                                    .expect("Unreachable, entitity definitely exists");
+                    DiggingCard::Bucket(bucket) => match bucket {
+                        BucketState::Empty | BucketState::Unheld(_) => {
+                            if event.event_type == UiEventType::ClickStart
+                                && get_ui_name(event.target, &transforms).eq("fill_bucket")
+                            {
+                                *card = DiggingCard::Bucket(BucketState::Held(0.));
                             }
                         }
-                    }
+                        BucketState::Held(progress) => {
+                            if event.event_type == UiEventType::HoverStop
+                                || !get_ui_name(event.target, &transforms).eq("fill_bucket")
+                            {
+                                info!("unheld");
+                                *card = DiggingCard::Bucket(BucketState::Unheld(*progress));
+                            } else {
+                                info!("held {}", progress);
+                                *progress = *progress + time.delta_seconds();
+                                if *progress > BUCKET_SUCCESS_TIME {
+                                    digging.empty_bucket();
+                                    if digging.no_buckets() {
+                                        info!("cleared buckets");
+                                        *card = DiggingCard::Bucket(BucketState::Finished(1.));
+                                    } else {
+                                        info!("cleared 1 bucket");
+                                        *card = DiggingCard::Bucket(BucketState::Unheld(*progress));
+                                    }
+                                }
+                            }
+                        }
+                        BucketState::Finished(_) => {
+                            entities
+                                .delete(ent)
+                                .expect("Unreachable, entitity definitely exists");
+                        }
+                    },
                 }
             }
         }
