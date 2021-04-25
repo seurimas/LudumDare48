@@ -1,0 +1,134 @@
+#![enable(implicit_some)]
+Custom(
+    Card(
+        item: Container(
+            transform: (
+                anchor: BottomMiddle,
+                width: 256.0,
+                height: 128.0,
+                x: 0.0,
+                y: 0.0,
+                mouse_reactive: true,
+            ),
+            background: NineSlice (
+                tex: File("sprites/sheet.png", ("IMAGE", ())),
+                x_start: 64,
+                y_start: 0,
+                width: 32,
+                height: 32,
+                left_dist: 5,
+                right_dist: 5,
+                top_dist: 5,
+                bottom_dist: 5,
+                texture_dimensions: (256, 256),
+            ),
+            children: [
+                Label (
+                    transform: (
+                        id: "captcha_prompt",
+                        anchor: TopMiddle,
+                        width: 256.,
+                        height: 32,
+                        x: 0.,
+                        y: -16.,
+                        mouse_reactive: false,
+                    ),
+                    text: (
+                        text: "Can you solve my captcha for me?",
+                        font_size: 18.,
+                        color: (1., 1., 1., 1.),
+                        font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
+                    )
+                ),
+                Image (
+                    transform: (
+                        id: "captcha",
+                        anchor: MiddleLeft,
+                        width: 128.,
+                        height: 64,
+                        x: 70.,
+                        y: 0.,
+                        mouse_reactive: false,
+                    ),
+                    image: SolidColor (0., 1., 0., 1.),
+                ),
+                Container (
+                    transform: (
+                        id: "solve_captcha",
+                        anchor: MiddleRight,
+                        width: 96.,
+                        height: 48.,
+                        x: -64.,
+                        y: 6.,
+                        mouse_reactive: true,
+                    ),
+                    background: NineSlice (
+                        tex: File("sprites/sheet.png", ("IMAGE", ())),
+                        x_start: 224,
+                        y_start: 0,
+                        width: 32,
+                        height: 32,
+                        left_dist: 5,
+                        right_dist: 5,
+                        top_dist: 5,
+                        bottom_dist: 5,
+                        texture_dimensions: (256, 256),
+                    ),
+                    children: [
+                        Label (
+                            transform: (
+                                id: "captcha_input",
+                                anchor: Middle,
+                                width: 128.,
+                                height: 32,
+                                x: 0.,
+                                y: -16.,
+                                mouse_reactive: false,
+                            ),
+                            text: (
+                                text: "",
+                                font_size: 14.,
+                                color: (1., 1., 1., 1.),
+                                font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
+                                editable: (
+                                    max_length: 8,
+                                    selected_text_color: (0., 0., 0., 1.),
+                                    selected_background_color: (0., 0., 1., 1.),
+                                    use_block_cursor: false,
+                                )
+                            )
+                        )
+                    ]
+                ),
+                Button (
+                    transform: (
+                        id: "solve_captcha",
+                        anchor: MiddleRight,
+                        width: 48.,
+                        height: 32.,
+                        x: -64.,
+                        y: -36.,
+                        mouse_reactive: true,
+                    ),
+                    button: (
+                        normal_image: NineSlice (
+                            tex: File("sprites/sheet.png", ("IMAGE", ())),
+                            x_start: 128,
+                            y_start: 0,
+                            width: 32,
+                            height: 32,
+                            left_dist: 5,
+                            right_dist: 5,
+                            top_dist: 5,
+                            bottom_dist: 5,
+                            texture_dimensions: (256, 256),
+                        ),
+                        text: "Solve",
+                        font_size: 12,
+                        normal_text_color: (1., 1., 1., 1.),
+                    ),
+                )
+            ]
+        )
+    )
+)

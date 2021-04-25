@@ -34,7 +34,7 @@ Custom(
                         opaque: false,
                     ),
                     text: (
-                        text: "Pulley",
+                        text: "Robot",
                         font_size: 25.,
                         color: (1., 1., 1., 1.),
                         font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),

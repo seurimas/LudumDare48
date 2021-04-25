@@ -17,14 +17,17 @@ pub enum DrillAlertState {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct PulleyAlertState;
+pub enum RobotAlertState {
+    CaptchaNeeded,
+    Fetching,
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum AlertState {
     Shovel(ShovelAlertState), // The shovel button is disabled sometimes
     Bucket(BucketAlertState), // Bucket might animate
     Drill(DrillAlertState),   // Drill is either ready or actively drilling
-    Pulley(PulleyAlertState), // Who knows
+    Robot(RobotAlertState),   // Who knows
 }
 
 #[derive(Component, Debug)]
@@ -52,9 +55,7 @@ pub enum DrillState {
 }
 
 #[derive(Debug)]
-pub enum PulleyState {
-    Waiting,
-}
+pub struct RobotState(String);
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
@@ -66,7 +67,7 @@ pub enum DiggingCard {
     Shovel(ShovelState),
     Bucket(BucketState),
     Drill(DrillState),
-    Pulley(PulleyState),
+    Robot(RobotState),
 }
 
 pub struct AlertableUpdateSystem {
@@ -168,9 +169,9 @@ impl<'s> System<'s> for CardSpawningSystem {
                         "prefabs/drill_card.ron",
                         DiggingCard::Drill(DrillState::Idling(0., 0., 0.)),
                     )),
-                    AlertState::Pulley(_) => Some((
-                        "prefabs/pulley_card.ron",
-                        DiggingCard::Pulley(PulleyState::Waiting),
+                    AlertState::Robot(RobotAlertState::CaptchaNeeded) => Some((
+                        "prefabs/robot_card.ron",
+                        DiggingCard::Robot(RobotState("".to_string())),
                     )),
                     _ => None,
                 } {
