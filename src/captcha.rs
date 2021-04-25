@@ -55,7 +55,9 @@ fn gen_captcha<'a>(world: &mut World, progress: &'a mut ProgressCounter) -> Capt
     CaptchaData { answer, texture }
 }
 
-// yanked from file:///home/basicdays/wip/games/LudumDare48/target/doc/amethyst_rendy/struct.ImageFormat.html
+// file:///home/basicdays/wip/games/LudumDare48/target/doc/amethyst_rendy/struct.ImageFormat.html
+// https://community.amethyst.rs/t/how-to-load-a-texture-from-memory/1090
+// https://stackoverflow.com/questions/57691913/how-to-load-a-texture-from-memory-in-amethyst-engine
 
 fn load_2d_texture<'a>(
     world: &mut World,
