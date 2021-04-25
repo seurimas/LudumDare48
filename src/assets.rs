@@ -1,3 +1,4 @@
+use crate::captcha::CaptchaData;
 use crate::prelude::*;
 pub use amethyst::assets::{
     AssetStorage, Handle, Loader, Prefab, PrefabData, PrefabLoader, ProgressCounter, RonFormat,
@@ -76,4 +77,4 @@ pub struct SoundStorage {
     pub robot_unlock: SourceHandle,
 }
 
-pub type GameAssets = (SpriteStorage, SoundStorage);
+pub type GameAssets = (SpriteStorage, SoundStorage, Vec<CaptchaData>);

@@ -1,4 +1,5 @@
 use crate::assets::*;
+use crate::captcha;
 use crate::hole::spawn_hole;
 use crate::prelude::*;
 use amethyst::{
@@ -39,6 +40,7 @@ impl SimpleState for GameplayState {
         data.world.delete_all();
         data.world.insert(self.assets.0.clone());
         data.world.insert(self.assets.1.clone());
+        data.world.insert(self.assets.2.clone());
         let dimensions = (*data.world.read_resource::<ScreenDimensions>()).clone();
         init_camera(data.world, &dimensions);
         spawn_hole(data.world);
@@ -187,6 +189,7 @@ impl SimpleState for LoadingState {
             "audio/robot_unlock.wav".to_string(),
             &mut progress_counter,
         );
+        let captchas = captcha::get_captchas(data.world, &mut progress_counter);
         self.progress = Some(progress_counter);
         self.assets = Some((
             SpriteStorage {
@@ -206,6 +209,7 @@ impl SimpleState for LoadingState {
                 robot_captcha_key,
                 robot_unlock,
             },
+            captchas,
         ));
 
         init_output(data.world);
