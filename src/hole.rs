@@ -8,16 +8,17 @@ pub struct HoleTile;
 impl Tile for HoleTile {
     fn sprite(&self, point: Point3<u32>, world: &World) -> Option<usize> {
         let (digging,): (Read<DiggingStatus>,) = world.system_data();
+        let sprite_idx = if point.y <= 15 { 0 } else { 16 };
         if point.y < digging.level() {
-            Some(4)
+            Some(sprite_idx + 4)
         } else if point.y > digging.level() {
-            Some(0)
+            Some(sprite_idx)
         } else if point.x < digging.current_block() {
-            Some(4)
+            Some(sprite_idx + 4)
         } else if point.x == digging.current_block() {
-            Some(digging.current_block_height() as usize)
+            Some(sprite_idx + digging.current_block_height() as usize)
         } else {
-            Some(0)
+            Some(sprite_idx)
         }
     }
 

@@ -61,7 +61,7 @@ impl Default for DiggingStatus {
             buckets: 3,
             depth: 0,
             progression: 0,
-            progress_checks: SCOOPS_PER_METER / 2,
+            progress_checks: SCOOPS_PER_METER / 4, // Change before release
             drill_status: DrillStatus::Locked,
             robot_status: RobotStatus::Locked,
         }
