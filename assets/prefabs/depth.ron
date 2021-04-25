@@ -1,0 +1,18 @@
+#![enable(implicit_some)]
+Label(
+    transform: (
+        id: "depth_indicator",
+        anchor: TopMiddle,
+        width: 526.0,
+        height: 32.0,
+        x: 0.0,
+        y: -16.0,
+        mouse_reactive: false,
+    ),
+    text: (
+        text: "Current Depth",
+        font_size: 48.,
+        color: (1., 1., 1., 1.),
+        font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
+    )
+)

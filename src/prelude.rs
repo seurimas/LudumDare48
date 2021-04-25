@@ -1,3 +1,4 @@
+pub use crate::cards::Alertable;
 pub use crate::digging::DiggingStatus;
 pub use crate::widgets::*;
 pub use amethyst::{
@@ -19,6 +20,7 @@ pub use amethyst::{
         UiFinder, UiImage, UiText, UiTransform,
     },
 };
+pub use rand::random;
 pub use shrev::EventChannel;
 
 pub fn get_ui_name(

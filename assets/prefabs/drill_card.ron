@@ -1,0 +1,126 @@
+#![enable(implicit_some)]
+Custom(
+    Card(
+        item: Container(
+            transform: (
+                anchor: Middle,
+                width: 256.0,
+                height: 128.0,
+                x: 0.0,
+                y: 0.0,
+                mouse_reactive: true,
+            ),
+            background: NineSlice (
+                tex: File("sprites/sheet.png", ("IMAGE", ())),
+                x_start: 64,
+                y_start: 0,
+                width: 32,
+                height: 32,
+                left_dist: 5,
+                right_dist: 5,
+                top_dist: 5,
+                bottom_dist: 5,
+                texture_dimensions: (256, 256),
+            ),
+            children: [
+                Label (
+                    transform: (
+                        anchor: MiddleLeft,
+                        width: 128.,
+                        height: 32,
+                        x: 64.,
+                        y: 0.,
+                        mouse_reactive: true,
+                    ),
+                    text: (
+                        text: "Pull Drill Cord",
+                        font_size: 25.,
+                        color: (1., 1., 1., 1.),
+                        font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
+                    )
+                ),
+                Image (
+                    transform: (
+                        id: "drill_slot_bg",
+                        anchor: MiddleRight,
+                        width: 64.,
+                        height: 32,
+                        x: -80.,
+                        y: 0.,
+                        z: 10.,
+                        mouse_reactive: false,
+                    ),
+                    image: PartialTexture (
+                        tex: File("sprites/sheet.png", ("IMAGE", ())),
+                        left: 0.625,
+                        top: 0.0,
+                        right: 0.875,
+                        bottom: 0.125,
+                    )
+                ),
+                Image (
+                    transform: (
+                        id: "drill_slot_0",
+                        anchor: MiddleRight,
+                        width: 16.,
+                        height: 16,
+                        x: -96.,
+                        y: 0.,
+                        z: 20.,
+                        mouse_reactive: false,
+                    ),
+                    image: SolidColor (1., 0., 0., 1.),
+                ),
+                Image (
+                    transform: (
+                        id: "drill_slot_1",
+                        anchor: MiddleRight,
+                        width: 16.,
+                        height: 16,
+                        x: -80.,
+                        y: 0.,
+                        z: 20.,
+                        mouse_reactive: false,
+                    ),
+                    image: SolidColor (1., 0., 0., 1.),
+                ),
+                Image (
+                    transform: (
+                        id: "drill_slot_2",
+                        anchor: MiddleRight,
+                        width: 16.,
+                        height: 16,
+                        x: -64.,
+                        y: 0.,
+                        z: 20.,
+                        mouse_reactive: false,
+                    ),
+                    image: SolidColor (1., 0., 0., 1.),
+                ),
+                Button (
+                    transform: (
+                        id: "pull_drill",
+                        anchor: MiddleRight,
+                        width: 32.,
+                        height: 32,
+                        x: -16.,
+                        y: 0.,
+                        mouse_reactive: true,
+                    ),
+                    button: (
+                        normal_image: PartialTexture (
+                            tex: File("sprites/sheet.png", ("IMAGE", ())),
+                            left: 0.5,
+                            top: 0.125,
+                            right: 0.625,
+                            bottom: 0.25,
+                        ),
+                        text: "",
+                        font_size: 0,
+                        normal_text_color: (1., 1., 1., 1.),
+                    ),
+                )
+            ]
+        )
+    )
+)
