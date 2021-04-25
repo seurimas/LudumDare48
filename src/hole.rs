@@ -39,6 +39,12 @@ impl Tile for SpriteTile {
             } else {
                 Some(8)
             }
+        } else if block_index > 1 && tile_index == block_index - 2 {
+            match digging.robot_status {
+                RobotStatus::Locked => None,
+                RobotStatus::Running { .. } => None,
+                RobotStatus::Idling => Some(12),
+            }
         } else if block_index >= BLOCKS_PER_METER && tile_index == block_index - BLOCKS_PER_METER {
             match digging.drill_status {
                 DrillStatus::Locked => None,

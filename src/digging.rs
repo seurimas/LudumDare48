@@ -1,18 +1,31 @@
 use crate::prelude::*;
+use amethyst::renderer::Camera;
 
 pub const SCOOPS_PER_BLOCK: u32 = 4;
 pub const SCOOPS_PER_METER: u32 = 28;
 pub const BLOCKS_PER_METER: u32 = SCOOPS_PER_METER / SCOOPS_PER_BLOCK;
 pub const DRILL_METER: u32 = 1; // Raise before release.
-pub const PULLEY_METER: u32 = 2; // Raise before release.
 pub const DRILL_TIME: f32 = 10.; // Raise before release.
 pub const DRILL_SPEED: f32 = 4.; // Change before release.
+pub const ROBOT_METER: u32 = 2; // Raise before release.
+pub const ROBOT_TIME: f32 = 10.; // Raise before release.
+pub const ROBOT_SPEED: f32 = 0.5; // Change before release.
 
 #[derive(Clone, Copy)]
 pub enum DrillStatus {
     Locked,
     Idling,
     Running { time_left: f32, partial_scoops: f32 },
+}
+
+#[derive(Clone, Copy)]
+pub enum RobotStatus {
+    Locked,
+    Idling,
+    Running {
+        time_left: f32,
+        partial_buckets: f32,
+    },
 }
 
 pub struct DiggingStatus {
@@ -24,11 +37,18 @@ pub struct DiggingStatus {
     progression: u32,
     progress_checks: u32,
     pub drill_status: DrillStatus,
+    pub robot_status: RobotStatus,
 }
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct Bucket {
+    pub index: u32, // Which bucket are we.
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Robot {
     pub index: u32, // Which bucket are we.
 }
 
@@ -43,16 +63,17 @@ impl Default for DiggingStatus {
             progression: 0,
             progress_checks: SCOOPS_PER_METER / 2,
             drill_status: DrillStatus::Locked,
+            robot_status: RobotStatus::Locked,
         }
     }
 }
 
 impl DiggingStatus {
     pub fn scoop(&mut self, shovel: bool) {
-        self.scoops = self.scoops + 1;
-        self.depth = self.depth + 1;
+        self.depth += 1;
         if shovel {
             self.time_since_shovel = 0.;
+            self.scoops += 1;
         }
     }
 
@@ -60,6 +81,13 @@ impl DiggingStatus {
         self.drill_status = DrillStatus::Running {
             time_left: DRILL_TIME,
             partial_scoops: 0.,
+        };
+    }
+
+    pub fn solve_captcha(&mut self) {
+        self.robot_status = RobotStatus::Running {
+            time_left: ROBOT_TIME,
+            partial_buckets: 0.,
         };
     }
 
@@ -137,6 +165,37 @@ impl<'s> System<'s> for DepthRenderSystem {
     }
 }
 
+pub struct DepthCameraSystem;
+
+impl<'s> System<'s> for DepthCameraSystem {
+    // Also needed: Components for UI, not sure what we'll use yet.
+    type SystemData = (
+        Read<'s, DiggingStatus>,
+        ReadStorage<'s, Camera>,
+        WriteStorage<'s, Transform>,
+        Read<'s, Time>,
+    );
+
+    fn run(&mut self, (digging, cameras, mut transforms, time): Self::SystemData) {
+        for (camera, mut transform) in (&cameras, &mut transforms).join() {
+            let distance = transform.translation().y - digging.level() as f32 * -32.;
+            if distance > 0. {
+                if distance > 128. {
+                    transform
+                        .set_translation_y(transform.translation().y - time.delta_seconds() * 8.);
+                } else if distance > 64. {
+                    transform
+                        .set_translation_y(transform.translation().y - time.delta_seconds() * 4.);
+                } else if distance > 1. {
+                    transform.set_translation_y(transform.translation().y - time.delta_seconds());
+                } else {
+                    transform.set_translation_y(digging.level() as f32 * -32.);
+                }
+            }
+        }
+    }
+}
+
 pub struct BucketRenderSystem;
 
 impl<'s> System<'s> for BucketRenderSystem {
@@ -162,18 +221,57 @@ impl<'s> System<'s> for BucketRenderSystem {
                 hidden.remove(entity);
             }
             let filled_buckets = digging.scoops / digging.scoops_per_bucket;
-            if let UiImage::PartialTexture { left, right, .. } = image {
-                if bucket.index < filled_buckets {
-                    *left = 0.125;
-                    *right = 0.25;
-                } else {
-                    *left = 0.;
-                    *right = 0.125;
+            if bucket.index < filled_buckets {
+                update_texture(image, Some(0.125), Some(0.25), Some(0.), Some(0.125));
+            } else {
+                update_texture(image, Some(0.), Some(0.125), Some(0.), Some(0.125));
+            }
+        }
+    }
+}
+
+pub struct RobotRenderSystem;
+
+impl<'s> System<'s> for RobotRenderSystem {
+    // Also needed: Components for UI, not sure what we'll use yet.
+    type SystemData = (
+        Read<'s, DiggingStatus>,
+        ReadStorage<'s, Robot>,
+        WriteStorage<'s, UiImage>,
+        WriteStorage<'s, HiddenPropagate>,
+        Entities<'s>,
+    );
+
+    fn run(&mut self, (digging, robots, mut images, mut hidden, entities): Self::SystemData) {
+        /*
+         Loop through alertables, update the UI based on the alertable state.
+        */
+        for (robot, mut image, entity) in (&robots, &mut images, &entities).join() {
+            match digging.robot_status {
+                RobotStatus::Locked | RobotStatus::Idling => {
+                    if hidden.get(entity).is_none() {
+                        hidden
+                            .insert(entity, HiddenPropagate::new())
+                            .expect("Unreachable, definitely exists");
+                    }
+                }
+                RobotStatus::Running {
+                    partial_buckets, ..
+                } => {
+                    if hidden.get(entity).is_some() {
+                        hidden.remove(entity);
+                    }
+                    if partial_buckets > 0.5 {
+                        update_texture(image, Some(0.125), Some(0.25), Some(0.375), Some(0.5));
+                    } else {
+                        update_texture(image, Some(0.), Some(0.125), Some(0.375), Some(0.5));
+                    }
                 }
             }
         }
     }
 }
+
 pub struct ShovelTimingSystem;
 
 impl<'s> System<'s> for ShovelTimingSystem {
@@ -191,25 +289,53 @@ impl<'s> System<'s> for DrillDiggingSystem {
     type SystemData = (Write<'s, DiggingStatus>, Read<'s, Time>);
     fn run(&mut self, (mut digging, time): Self::SystemData) {
         let mut scooped = false;
-        if digging.can_scoop() {
-            if let DrillStatus::Running {
-                time_left,
-                partial_scoops,
-            } = &mut digging.drill_status
-            {
-                *time_left -= time.delta_seconds();
-                *partial_scoops += DRILL_SPEED * time.delta_seconds();
-                if *partial_scoops > 1. {
-                    *partial_scoops -= 1.;
-                    scooped = true;
-                }
-                if *time_left < 0. {
-                    digging.drill_status = DrillStatus::Idling;
-                }
+        if let DrillStatus::Running {
+            time_left,
+            partial_scoops,
+        } = &mut digging.drill_status
+        {
+            *time_left -= time.delta_seconds();
+            *partial_scoops += DRILL_SPEED * time.delta_seconds();
+            if *partial_scoops > 1. {
+                *partial_scoops -= 1.;
+                scooped = true;
+            }
+            if *time_left < 0. {
+                digging.drill_status = DrillStatus::Idling;
             }
         }
         if scooped {
             digging.scoop(false);
+        }
+    }
+}
+
+pub struct RobotRunningSystem;
+
+impl<'s> System<'s> for RobotRunningSystem {
+    // Also needed: Components for UI, not sure what we'll use yet.
+    type SystemData = (Write<'s, DiggingStatus>, Read<'s, Time>);
+    fn run(&mut self, (mut digging, time): Self::SystemData) {
+        let mut dumped = false;
+        if !digging.no_buckets() {
+            if let RobotStatus::Running {
+                time_left,
+                partial_buckets,
+            } = &mut digging.robot_status
+            {
+                *time_left -= time.delta_seconds();
+                *partial_buckets += ROBOT_SPEED * time.delta_seconds();
+                if *partial_buckets > 1. {
+                    *partial_buckets -= 1.;
+                    dumped = true;
+                }
+                if *time_left < 0. {
+                    digging.robot_status = RobotStatus::Idling;
+                }
+            }
+        }
+        if dumped {
+            digging.empty_bucket();
         }
     }
 }
@@ -243,8 +369,8 @@ impl<'s> System<'s> for ProgressionSystem {
                     )
                     .expect("Unreachable: entity just created");
             }
-            PULLEY_METER => {
-                println!("Unlocking robot!");
+            ROBOT_METER => {
+                digging.robot_status = RobotStatus::Idling;
                 let alert_entity = spawner.spawn_ui_widget(
                     "prefabs/robot_alertable.ron",
                     Position { x: -64., y: -224. },
@@ -275,10 +401,13 @@ impl SystemBundle<'_, '_> for DiggingBundle {
         dispatcher: &mut DispatcherBuilder<'_, '_>,
     ) -> Result<(), Error> {
         world.insert(DiggingStatus::default());
+        dispatcher.add(DepthCameraSystem, "depth_camera", &[]);
         dispatcher.add(DepthRenderSystem, "depth_render", &[]);
+        dispatcher.add(RobotRenderSystem, "robot_render", &[]);
         dispatcher.add(BucketRenderSystem, "bucket_render", &[]);
         dispatcher.add(ProgressionSystem, "progression", &[]);
         dispatcher.add(DrillDiggingSystem, "drill_digging", &[]);
+        dispatcher.add(RobotRunningSystem, "robot_running", &[]);
         dispatcher.add(ShovelTimingSystem, "shovel_timing", &[]);
         Ok(())
     }

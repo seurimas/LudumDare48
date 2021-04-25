@@ -43,10 +43,11 @@ impl SimpleState for GameplayState {
         init_camera(data.world, &dimensions);
         spawn_hole(data.world);
         data.world.exec(
-            |(mut spawner, mut alertables, mut buckets): (
+            |(mut spawner, mut alertables, mut buckets, mut robots): (
                 WidgetSpawner,
                 WriteStorage<'_, crate::cards::Alertable>,
                 WriteStorage<'_, crate::digging::Bucket>,
+                WriteStorage<'_, crate::digging::Robot>,
             )| {
                 spawner.spawn_ui_widget("prefabs/depth.ron", Position { x: 0., y: -16. });
                 for i in 0..16 {
@@ -61,6 +62,11 @@ impl SimpleState for GameplayState {
                         .insert(bucket_entity, crate::digging::Bucket { index: i })
                         .expect("Unreachable, entity just created");
                 }
+                let robot_entity =
+                    spawner.spawn_ui_widget("prefabs/robot.ron", Position { x: -48., y: 16. });
+                robots
+                    .insert(robot_entity, crate::digging::Robot { index: 0 })
+                    .expect("Unreachable, entity just created");
                 let alert_entity = spawner.spawn_ui_widget(
                     "prefabs/shovel_alertable.ron",
                     Position { x: -64., y: -32. },
