@@ -19,6 +19,7 @@ use amethyst::{
 };
 
 mod assets;
+mod captcha;
 mod cards;
 mod digging;
 mod hole;
