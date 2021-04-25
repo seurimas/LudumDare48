@@ -58,3 +58,57 @@ impl<'s> System<'s> for BucketUpdateSystem {
         }
     }
 }
+
+pub struct BucketRenderingSystem;
+
+impl<'s> System<'s> for BucketRenderingSystem {
+    // I'm not 100% sure the component to use for the UI elements here. Probably UIContainer?
+    type SystemData = (
+        Read<'s, DiggingStatus>,
+        ReadStorage<'s, DiggingCard>,
+        WriteStorage<'s, UiTransform>,
+        WriteStorage<'s, UiImage>,
+    );
+
+    fn run(&mut self, (digging, cards, mut transforms, mut images): Self::SystemData) {
+        /*
+         Loop through cards (really, only the one on screen, probably), update the UI based on card state.
+        */
+        for card in cards.join() {
+            match card {
+                DiggingCard::Bucket(BucketState::Held(progress)) => {
+                    for (mut transform, mut image) in (&mut transforms, &mut images).join() {
+                        if transform.id.eq("dump_bucket_bar") {
+                            let width = (1. - progress) * 117.;
+                            let x = 65. + (progress * 117. * 0.5);
+                            transform.local_x = x;
+                            transform.width = width;
+                        }
+                    }
+                }
+                DiggingCard::Bucket(BucketState::Finished(_)) => {
+                    for (mut transform, mut image) in (&mut transforms, &mut images).join() {
+                        if transform.id.eq("dump_bucket_bar") {
+                            let width = 0.;
+                            let x = 65.;
+                            transform.local_x = x;
+                            transform.width = width;
+                        }
+                    }
+                }
+                DiggingCard::Bucket(BucketState::Unheld(_))
+                | DiggingCard::Bucket(BucketState::Empty) => {
+                    for (mut transform, mut image) in (&mut transforms, &mut images).join() {
+                        if transform.id.eq("dump_bucket_bar") {
+                            let width = 117.;
+                            let x = 65.;
+                            transform.local_x = x;
+                            transform.width = width;
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+}

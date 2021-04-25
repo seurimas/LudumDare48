@@ -1,6 +1,6 @@
 mod bucket;
 
-pub use self::bucket::{BucketAlertState, BucketState, BucketUpdateSystem};
+pub use self::bucket::{BucketAlertState, BucketRenderingSystem, BucketState, BucketUpdateSystem};
 use crate::prelude::*;
 use log::info;
 
@@ -121,6 +121,15 @@ impl<'s> System<'s> for AlertableUpdateSystem {
                 }
                 _ => {}
             }
+            match (digging.no_buckets(), alertable.state) {
+                (false, AlertState::Bucket(BucketAlertState::Empty)) => {
+                    alertable.state = AlertState::Bucket(BucketAlertState::Filled(0.));
+                }
+                (true, AlertState::Bucket(BucketAlertState::Filled(_))) => {
+                    alertable.state = AlertState::Bucket(BucketAlertState::Empty);
+                }
+                _ => {}
+            }
         }
         for event in events.read(&mut self.reader_id) {
             if event.event_type != UiEventType::Click {
@@ -165,15 +174,12 @@ impl<'s> System<'s> for CardSpawningSystem {
         */
         for alertable in alertables.join() {
             if alertable.clicked {
-                for (_card, entity) in (&cards, &entities).join() {
-                    entities.delete(entity).expect("Double delete");
-                }
                 if let Some((prefab, card)) = match alertable.state {
                     AlertState::Shovel(ShovelAlertState::Ready) => Some((
                         "prefabs/shovel_card.ron",
                         DiggingCard::Shovel(ShovelState { click_progress: 0. }),
                     )),
-                    AlertState::Bucket(_) => Some((
+                    AlertState::Bucket(BucketAlertState::Filled(_)) => Some((
                         "prefabs/bucket_card.ron",
                         DiggingCard::Bucket(BucketState::Empty),
                     )),
@@ -187,6 +193,9 @@ impl<'s> System<'s> for CardSpawningSystem {
                     )),
                     _ => None,
                 } {
+                    for (_card, entity) in (&cards, &entities).join() {
+                        entities.delete(entity).expect("Double delete");
+                    }
                     let entity = spawner.spawn_ui_widget(prefab, CARD_POSITION);
                     cards
                         .insert(entity, card)
@@ -523,6 +532,11 @@ impl SystemBundle<'_, '_> for CardsBundle {
         );
         dispatcher.add(DrillUpdateSystem, "drill_update", &["card_input"]);
         dispatcher.add(BucketUpdateSystem, "bucket_update", &["card_input"]);
+        dispatcher.add(
+            BucketRenderingSystem,
+            "bucket_card_render",
+            &["bucket_update"],
+        );
         dispatcher.add(ShovelRenderingSystem, "shovel_render", &["card_input"]);
         dispatcher.add(DrillRenderingSystem, "drill_render", &["drill_update"]);
         Ok(())

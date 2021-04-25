@@ -8,6 +8,7 @@ Custom(
                 height: 128.0,
                 x: 0.0,
                 y: 0.0,
+                z: 1.,
                 mouse_reactive: true,
             ),
             background: NineSlice (
@@ -30,6 +31,7 @@ Custom(
                         height: 32,
                         x: 64.,
                         y: 0.,
+                        z: 2.,
                         mouse_reactive: true,
                     ),
                     text: (
@@ -39,6 +41,44 @@ Custom(
                         font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
                     )
                 ),
+                Container (
+                    transform: (
+                        anchor: MiddleRight,
+                        width: 128.,
+                        height: 32,
+                        x: -96.,
+                        y: 0.,
+                        z: 3.,
+                        mouse_reactive: false,
+                    ),
+                    background: NineSlice (
+                        tex: File("sprites/sheet.png", ("IMAGE", ())),
+                        x_start: 96,
+                        y_start: 96,
+                        width: 64,
+                        height: 32,
+                        left_dist: 9,
+                        right_dist: 9,
+                        top_dist: 12,
+                        bottom_dist: 5,
+                        texture_dimensions: (256, 256),
+                    ),
+                    children: [
+                        Image (
+                            transform: (
+                                id: "dump_bucket_bar",
+                                anchor: MiddleLeft,
+                                width: 117.,
+                                height: 18,
+                                x: 65,
+                                y: -4.,
+                                z: 4.,
+                                mouse_reactive: false,
+                            ),
+                            image: SolidColor (1., 0., 0., 1.)
+                        ),
+                    ]
+                ),
                 Button (
                     transform: (
                         id: "fill_bucket",
@@ -47,6 +87,7 @@ Custom(
                         height: 32,
                         x: -16.,
                         y: 0.,
+                        z: 2.,
                         mouse_reactive: true,
                     ),
                     button: (
