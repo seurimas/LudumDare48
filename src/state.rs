@@ -226,6 +226,7 @@ impl SimpleState for GameplayState {
                 WriteStorage<'_, crate::cards::Alertable>,
                 WriteStorage<'_, crate::digging::Bucket>,
             )| {
+                spawner.spawn_ui_widget("prefabs/depth.ron", Position { x: 0., y: -16. });
                 for i in 0..16 {
                     let bucket_entity = spawner.spawn_ui_widget(
                         "prefabs/bucket.ron",

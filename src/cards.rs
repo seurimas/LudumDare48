@@ -7,9 +7,20 @@ pub enum BucketAlertState {
 }
 
 #[derive(Debug)]
+pub enum DrillAlertState {
+    Ready,
+    Drilling(f32),
+}
+
+#[derive(Debug)]
+pub struct PulleyAlertState;
+
+#[derive(Debug)]
 pub enum AlertState {
     Shovel,                   // The shovel button is always the same
     Bucket(BucketAlertState), // Bucket might animate
+    Drill(DrillAlertState),   // Drill is either ready or actively drilling
+    Pulley(PulleyAlertState), // Who knows
 }
 
 #[derive(Component, Debug)]
@@ -35,6 +46,20 @@ pub enum BucketState {
     Finished(f32), // The player has gotten to the top, and the bucket is now emptying. Used for animation, perhaps.
 }
 
+#[derive(Debug)]
+pub enum DrillState {
+    Idling(f32, f32, f32),
+    Running {
+        velocity: (f32, f32, f32),
+        position: (f32, f32, f32),
+    },
+}
+
+#[derive(Debug)]
+pub enum PulleyState {
+    Waiting,
+}
+
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub enum DiggingCard {
@@ -44,6 +69,8 @@ pub enum DiggingCard {
     // CardRenderingSystem will update the UI elements based on the internal state of these cards.
     Shovel(ShovelState),
     Bucket(BucketState),
+    Drill(DrillState),
+    Pulley(PulleyState),
 }
 
 pub struct AlertableSpawningSystem;
@@ -119,20 +146,30 @@ impl<'s> System<'s> for CardSpawningSystem {
                 for (_card, entity) in (&cards, &entities).join() {
                     entities.delete(entity).expect("Double delete");
                 }
-                let (prefab, card) = match alertable.state {
-                    AlertState::Shovel => (
+                if let Some((prefab, card)) = match alertable.state {
+                    AlertState::Shovel => Some((
                         "prefabs/shovel_card.ron",
                         DiggingCard::Shovel(ShovelState { click_progress: 0. }),
-                    ),
-                    AlertState::Bucket(_) => (
+                    )),
+                    AlertState::Bucket(_) => Some((
                         "prefabs/bucket_card.ron",
                         DiggingCard::Bucket(BucketState::Empty),
-                    ),
-                };
-                let entity = spawner.spawn_ui_widget(prefab, Position { x: 0., y: 0. });
-                cards
-                    .insert(entity, card)
-                    .expect("Unreachable, entity just created");
+                    )),
+                    AlertState::Drill(DrillAlertState::Ready) => Some((
+                        "prefabs/drill_card.ron",
+                        DiggingCard::Drill(DrillState::Idling(0., 0., 0.)),
+                    )),
+                    AlertState::Pulley(_) => Some((
+                        "prefabs/pulley_card.ron",
+                        DiggingCard::Pulley(PulleyState::Waiting),
+                    )),
+                    _ => None,
+                } {
+                    let entity = spawner.spawn_ui_widget(prefab, Position { x: 0., y: 0. });
+                    cards
+                        .insert(entity, card)
+                        .expect("Unreachable, entity just created");
+                }
             }
         }
     }
@@ -152,11 +189,11 @@ fn get_card_entity<'s>(
     }
 }
 
-pub struct CardUpdateSystem {
+pub struct CardInputSystem {
     reader_id: ReaderId<UiEvent>,
 }
 
-impl<'s> System<'s> for CardUpdateSystem {
+impl<'s> System<'s> for CardInputSystem {
     type SystemData = (
         Read<'s, EventChannel<UiEvent>>,
         Write<'s, DiggingStatus>,
@@ -203,15 +240,91 @@ impl<'s> System<'s> for CardUpdateSystem {
                             }
                         }
                     }
+                    DiggingCard::Drill(drill_state) => {
+                        if get_ui_name(event.target, &transforms).eq("pull_drill") {
+                            match drill_state {
+                                DrillState::Idling(a, b, c)
+                                | DrillState::Running {
+                                    position: (a, b, c),
+                                    ..
+                                } => {
+                                    *card = DiggingCard::Drill(DrillState::Running {
+                                        position: (*a, *b, *c),
+                                        velocity: (
+                                            random::<f32>() * 10.,
+                                            random::<f32>() * 10.,
+                                            random::<f32>() * 10.,
+                                        ),
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
     }
 }
 
-pub struct CardRenderingSystem;
+pub struct DrillUpdateSystem;
 
-impl<'s> System<'s> for CardRenderingSystem {
+impl<'s> System<'s> for DrillUpdateSystem {
+    type SystemData = (
+        Write<'s, DiggingStatus>,
+        WriteStorage<'s, DiggingCard>,
+        Entities<'s>,
+        Read<'s, Time>,
+    );
+    fn run(&mut self, (mut digging, mut cards, entities, time): Self::SystemData) {
+        for (card, entity) in (&mut cards, &entities).join() {
+            if let DiggingCard::Drill(DrillState::Running { position, velocity }) = card {
+                position.0 += velocity.0 * time.delta_seconds();
+                position.1 += velocity.1 * time.delta_seconds();
+                position.2 += velocity.2 * time.delta_seconds();
+                velocity.0 -= 10. * time.delta_seconds();
+                velocity.1 -= 10. * time.delta_seconds();
+                velocity.2 -= 10. * time.delta_seconds();
+                if position.0 > 1. {
+                    position.0 -= 1.;
+                }
+                if position.1 > 1. {
+                    position.1 -= 1.;
+                }
+                if position.2 > 1. {
+                    position.2 -= 1.;
+                }
+                if velocity.0 < 0. {
+                    velocity.0 = 0.
+                }
+                if velocity.1 < 0. {
+                    velocity.1 = 0.
+                }
+                if velocity.2 < 0. {
+                    velocity.2 = 0.
+                }
+                if velocity.0 == 0. && velocity.1 == 0. && velocity.2 == 0. {
+                    // Good
+                    if position.0 > 0.3333
+                        && position.0 < 0.6666
+                        && position.1 > 0.3333
+                        && position.1 < 0.6666
+                        && position.2 > 0.3333
+                        && position.2 < 0.6666
+                    {
+                        entities
+                            .delete(entity)
+                            .expect("Unreachable, entitity definitely exists");
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub struct ShovelRenderingSystem;
+
+impl<'s> System<'s> for ShovelRenderingSystem {
     // I'm not 100% sure the component to use for the UI elements here. Probably UIContainer?
     type SystemData = (
         Read<'s, DiggingStatus>,
@@ -250,6 +363,49 @@ impl<'s> System<'s> for CardRenderingSystem {
     }
 }
 
+pub struct DrillRenderingSystem;
+
+impl<'s> System<'s> for DrillRenderingSystem {
+    // I'm not 100% sure the component to use for the UI elements here. Probably UIContainer?
+    type SystemData = (
+        Read<'s, DiggingStatus>,
+        ReadStorage<'s, DiggingCard>,
+        WriteStorage<'s, UiTransform>,
+        WriteStorage<'s, UiImage>,
+    );
+
+    fn run(&mut self, (digging, cards, mut transforms, mut images): Self::SystemData) {
+        /*
+         Loop through cards (really, only the one on screen, probably), update the UI based on card state.
+        */
+        for card in cards.join() {
+            match card {
+                DiggingCard::Drill(DrillState::Idling(a, b, c))
+                | DiggingCard::Drill(DrillState::Running {
+                    position: (a, b, c),
+                    ..
+                }) => {
+                    for (mut transform, mut image) in (&mut transforms, &mut images).join() {
+                        match transform.id.as_ref() {
+                            "drill_slot_0" => {
+                                transform.local_y = a * 32. - 16.;
+                            }
+                            "drill_slot_1" => {
+                                transform.local_y = b * 32. - 16.;
+                            }
+                            "drill_slot_2" => {
+                                transform.local_y = c * 32. - 16.;
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
 pub struct CardsBundle;
 
 impl SystemBundle<'_, '_> for CardsBundle {
@@ -272,13 +428,15 @@ impl SystemBundle<'_, '_> for CardsBundle {
         dispatcher.add(CardSpawningSystem, "card_spawn", &[]);
         let card_reader = ui_events.register_reader();
         dispatcher.add(
-            CardUpdateSystem {
+            CardInputSystem {
                 reader_id: card_reader,
             },
-            "card_update",
+            "card_input",
             &[],
         );
-        dispatcher.add(CardRenderingSystem, "card_render", &["card_update"]);
+        dispatcher.add(DrillUpdateSystem, "drill_update", &["card_input"]);
+        dispatcher.add(ShovelRenderingSystem, "shovel_render", &["card_input"]);
+        dispatcher.add(DrillRenderingSystem, "drill_render", &["drill_update"]);
         Ok(())
     }
 }
