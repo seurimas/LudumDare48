@@ -3,7 +3,7 @@ Custom(
     Card(
         item: Container(
             transform: (
-                anchor: Middle,
+                anchor: BottomMiddle,
                 width: 256.0,
                 height: 128.0,
                 x: 0.0,

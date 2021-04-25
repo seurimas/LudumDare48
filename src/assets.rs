@@ -48,6 +48,7 @@ pub fn load_spritesheet<'a>(
 #[derive(Clone)]
 pub struct SpriteStorage {
     pub master: SpriteSheetHandle,
+    pub tile_spritesheet: SpriteSheetHandle,
 }
 
 pub type GameAssets = (SpriteStorage,);

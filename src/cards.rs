@@ -2,6 +2,12 @@ use crate::prelude::*;
 use log::info;
 
 #[derive(Debug, Clone, Copy)]
+pub enum ShovelAlertState {
+    Ready,     // Don't do anything funky.
+    NoBuckets, // Animate somehow!
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum BucketAlertState {
     Empty,       // Don't do anything funky.
     Filled(f32), // Animate somehow!
@@ -18,7 +24,7 @@ pub struct PulleyAlertState;
 
 #[derive(Debug, Clone, Copy)]
 pub enum AlertState {
-    Shovel,                   // The shovel button is always the same
+    Shovel(ShovelAlertState), // The shovel button is disabled sometimes
     Bucket(BucketAlertState), // Bucket might animate
     Drill(DrillAlertState),   // Drill is either ready or actively drilling
     Pulley(PulleyAlertState), // Who knows
@@ -105,6 +111,15 @@ impl<'s> System<'s> for AlertableUpdateSystem {
                 }
                 _ => {}
             }
+            match (digging.can_scoop(), alertable.state) {
+                (false, AlertState::Shovel(ShovelAlertState::Ready)) => {
+                    alertable.state = AlertState::Shovel(ShovelAlertState::NoBuckets);
+                }
+                (true, AlertState::Shovel(ShovelAlertState::NoBuckets)) => {
+                    alertable.state = AlertState::Shovel(ShovelAlertState::NoBuckets);
+                }
+                _ => {}
+            }
         }
         for event in events.read(&mut self.reader_id) {
             if event.event_type != UiEventType::Click {
@@ -130,6 +145,8 @@ impl<'s> System<'s> for AlertableRenderSystem {
     }
 }
 
+const CARD_POSITION: Position = Position { x: 0., y: 64. };
+
 pub struct CardSpawningSystem;
 
 impl<'s> System<'s> for CardSpawningSystem {
@@ -151,7 +168,7 @@ impl<'s> System<'s> for CardSpawningSystem {
                     entities.delete(entity).expect("Double delete");
                 }
                 if let Some((prefab, card)) = match alertable.state {
-                    AlertState::Shovel => Some((
+                    AlertState::Shovel(ShovelAlertState::Ready) => Some((
                         "prefabs/shovel_card.ron",
                         DiggingCard::Shovel(ShovelState { click_progress: 0. }),
                     )),
@@ -169,7 +186,7 @@ impl<'s> System<'s> for CardSpawningSystem {
                     )),
                     _ => None,
                 } {
-                    let entity = spawner.spawn_ui_widget(prefab, Position { x: 0., y: 0. });
+                    let entity = spawner.spawn_ui_widget(prefab, CARD_POSITION);
                     cards
                         .insert(entity, card)
                         .expect("Unreachable, entity just created");

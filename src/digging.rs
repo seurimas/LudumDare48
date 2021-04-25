@@ -1,5 +1,12 @@
 use crate::prelude::*;
 
+pub const SCOOPS_PER_BLOCK: u32 = 4;
+pub const SCOOPS_PER_METER: u32 = 28;
+pub const BLOCKS_PER_METER: u32 = SCOOPS_PER_METER / SCOOPS_PER_BLOCK;
+pub const DRILL_METER: u32 = 1; // Raise before release.
+pub const PULLEY_METER: u32 = 2; // Raise before release.
+pub const DRILL_TIME: f32 = 10.; // Raise before release.
+
 #[derive(Clone, Copy)]
 pub enum DrillStatus {
     Locked,
@@ -31,7 +38,7 @@ impl Default for DiggingStatus {
             buckets: 3,
             depth: 0,
             progression: 0,
-            progress_checks: 17,
+            progress_checks: SCOOPS_PER_METER / 2,
             drill_status: DrillStatus::Locked,
         }
     }
@@ -45,7 +52,7 @@ impl DiggingStatus {
 
     pub fn drill(&mut self) {
         self.drill_status = DrillStatus::Running {
-            time_left: 10.,
+            time_left: DRILL_TIME,
             partial_scoops: 0.,
         };
     }
@@ -74,8 +81,20 @@ impl DiggingStatus {
         self.scoops < self.scoops_per_bucket
     }
 
+    pub fn level(&self) -> u32 {
+        self.depth / SCOOPS_PER_METER
+    }
+
+    pub fn current_block(&self) -> u32 {
+        (self.depth % SCOOPS_PER_METER) / SCOOPS_PER_BLOCK
+    }
+
+    pub fn current_block_height(&self) -> u32 {
+        (self.depth % SCOOPS_PER_METER) % SCOOPS_PER_BLOCK
+    }
+
     pub fn get_depth_string(&self) -> String {
-        format!("{:.3}", self.depth as f32 / 34.)
+        format!("{:.3}", self.depth as f32 / SCOOPS_PER_METER as f32)
     }
 
     pub fn progress(&mut self) -> u32 {
@@ -184,7 +203,7 @@ impl<'s> System<'s> for ProgressionSystem {
     );
     fn run(&mut self, (mut digging, mut alertables, mut spawner): Self::SystemData) {
         match digging.progress() {
-            1 => {
+            DRILL_METER => {
                 digging.drill_status = DrillStatus::Idling;
                 let alert_entity = spawner.spawn_ui_widget(
                     "prefabs/drill_alertable.ron",
@@ -202,7 +221,7 @@ impl<'s> System<'s> for ProgressionSystem {
                     )
                     .expect("Unreachable: entity just created");
             }
-            2 => {
+            PULLEY_METER => {
                 println!("Unlocking pulley!");
                 let alert_entity = spawner.spawn_ui_widget(
                     "prefabs/pulley_alertable.ron",
