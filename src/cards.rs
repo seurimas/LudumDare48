@@ -1,22 +1,22 @@
 use crate::prelude::*;
 use log::info;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum BucketAlertState {
     Empty,       // Don't do anything funky.
     Filled(f32), // Animate somehow!
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum DrillAlertState {
     Ready,
     Drilling(f32),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct PulleyAlertState;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum AlertState {
     Shovel,                   // The shovel button is always the same
     Bucket(BucketAlertState), // Bucket might animate
@@ -75,14 +75,6 @@ pub enum DiggingCard {
     Pulley(PulleyState),
 }
 
-pub struct AlertableSpawningSystem;
-
-impl<'s> System<'s> for AlertableSpawningSystem {
-    type SystemData = (WriteStorage<'s, Alertable>, WidgetSpawner<'s>);
-
-    fn run(&mut self, (alertables, spawner): Self::SystemData) {}
-}
-
 pub struct AlertableUpdateSystem {
     reader_id: ReaderId<UiEvent>,
 }
@@ -92,17 +84,27 @@ impl<'s> System<'s> for AlertableUpdateSystem {
     // Also needed: Read UI input, likely like UiEventHandlerSystem: https://github.com/amethyst/amethyst/blob/main/examples/ui/main.rs
     type SystemData = (
         Read<'s, EventChannel<UiEvent>>,
+        Read<'s, DiggingStatus>,
         WriteStorage<'s, Alertable>,
         Entities<'s>,
         Read<'s, Time>,
     );
 
-    fn run(&mut self, (events, mut alertables, entities, time): Self::SystemData) {
+    fn run(&mut self, (events, digging, mut alertables, entities, time): Self::SystemData) {
         /*
          Loop through alertables, update any timers, check if they have been clicked, fill buckets.
         */
         for (mut alertable, entity) in (&mut alertables, &entities).join() {
             alertable.clicked = false;
+            match (digging.drill_status, alertable.state) {
+                (DrillStatus::Running { .. }, AlertState::Drill(DrillAlertState::Ready)) => {
+                    alertable.state = AlertState::Drill(DrillAlertState::Drilling(0.));
+                }
+                (DrillStatus::Idling, AlertState::Drill(DrillAlertState::Drilling(_))) => {
+                    alertable.state = AlertState::Drill(DrillAlertState::Ready);
+                }
+                _ => {}
+            }
         }
         for event in events.read(&mut self.reader_id) {
             if event.event_type != UiEventType::Click {
@@ -335,14 +337,15 @@ impl<'s> System<'s> for DrillUpdateSystem {
                     velocity.2 = 0.
                 }
                 if velocity.0 == 0. && velocity.1 == 0. && velocity.2 == 0. {
-                    // Good
-                    if position.0 > 0.3333
-                        && position.0 < 0.6666
-                        && position.1 > 0.3333
-                        && position.1 < 0.6666
-                        && position.2 > 0.3333
-                        && position.2 < 0.6666
+                    // Maybe do some sound effects here.
+                    if position.0 > 0.25
+                        && position.0 < 0.75
+                        && position.1 > 0.25
+                        && position.1 < 0.75
+                        && position.2 > 0.25
+                        && position.2 < 0.75
                     {
+                        digging.drill();
                         entities
                             .delete(entity)
                             .expect("Unreachable, entitity definitely exists");
@@ -446,7 +449,6 @@ impl SystemBundle<'_, '_> for CardsBundle {
         dispatcher: &mut DispatcherBuilder<'_, '_>,
     ) -> Result<(), Error> {
         let mut ui_events = <Write<EventChannel<UiEvent>>>::fetch(world);
-        dispatcher.add(AlertableSpawningSystem, "alert_spawn", &[]);
         let alert_reader = ui_events.register_reader();
         dispatcher.add(
             AlertableUpdateSystem {

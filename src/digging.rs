@@ -1,5 +1,12 @@
 use crate::prelude::*;
 
+#[derive(Clone, Copy)]
+pub enum DrillStatus {
+    Locked,
+    Idling,
+    Running { time_left: f32, partial_scoops: f32 },
+}
+
 pub struct DiggingStatus {
     scoops: u32,
     scoops_per_bucket: u32,
@@ -7,6 +14,7 @@ pub struct DiggingStatus {
     depth: u32,
     progression: u32,
     progress_checks: u32,
+    pub drill_status: DrillStatus,
 }
 
 #[derive(Component, Debug)]
@@ -24,6 +32,7 @@ impl Default for DiggingStatus {
             depth: 0,
             progression: 0,
             progress_checks: 17,
+            drill_status: DrillStatus::Locked,
         }
     }
 }
@@ -32,6 +41,13 @@ impl DiggingStatus {
     pub fn scoop(&mut self) {
         self.scoops = self.scoops + 1;
         self.depth = self.depth + 1;
+    }
+
+    pub fn drill(&mut self) {
+        self.drill_status = DrillStatus::Running {
+            time_left: 10.,
+            partial_scoops: 0.,
+        };
     }
 
     pub fn empty_bucket(&mut self) {
@@ -129,6 +145,33 @@ impl<'s> System<'s> for BucketRenderSystem {
         }
     }
 }
+pub struct DrillDiggingSystem;
+
+impl<'s> System<'s> for DrillDiggingSystem {
+    // Also needed: Components for UI, not sure what we'll use yet.
+    type SystemData = (Write<'s, DiggingStatus>, Read<'s, Time>);
+    fn run(&mut self, (mut digging, time): Self::SystemData) {
+        let mut scooped = false;
+        if let DrillStatus::Running {
+            time_left,
+            partial_scoops,
+        } = &mut digging.drill_status
+        {
+            *time_left -= time.delta_seconds();
+            *partial_scoops += time.delta_seconds();
+            if *partial_scoops > 1. {
+                *partial_scoops -= 1.;
+                scooped = true;
+            }
+            if *time_left < 0. {
+                digging.drill_status = DrillStatus::Idling;
+            }
+        }
+        if scooped {
+            digging.scoop();
+        }
+    }
+}
 
 pub struct ProgressionSystem;
 
@@ -142,7 +185,7 @@ impl<'s> System<'s> for ProgressionSystem {
     fn run(&mut self, (mut digging, mut alertables, mut spawner): Self::SystemData) {
         match digging.progress() {
             1 => {
-                println!("Unlocking drill!");
+                digging.drill_status = DrillStatus::Idling;
                 let alert_entity = spawner.spawn_ui_widget(
                     "prefabs/drill_alertable.ron",
                     Position { x: -64., y: -160. },
@@ -192,6 +235,7 @@ impl SystemBundle<'_, '_> for DiggingBundle {
         dispatcher.add(DepthRenderSystem, "depth_render", &[]);
         dispatcher.add(BucketRenderSystem, "bucket_render", &[]);
         dispatcher.add(ProgressionSystem, "progression", &[]);
+        dispatcher.add(DrillDiggingSystem, "drill_digging", &[]);
         Ok(())
     }
 }

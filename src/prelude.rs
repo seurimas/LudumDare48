@@ -1,5 +1,5 @@
 pub use crate::cards::Alertable;
-pub use crate::digging::DiggingStatus;
+pub use crate::digging::{DiggingStatus, DrillStatus};
 pub use crate::widgets::*;
 pub use amethyst::{
     assets::PrefabData,
