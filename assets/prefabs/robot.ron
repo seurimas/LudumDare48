@@ -9,9 +9,9 @@ Image(
     ),
     image: PartialTexture (
         tex: File("sprites/sheet.png", ("IMAGE", ())),
-        left: 0.25,
-        top: 0.375,
-        right: 0.375,
-        bottom: 0.5,
+        left: 0.,
+        top: 0.,
+        right: 0.125,
+        bottom: 0.125,
     ),
 )

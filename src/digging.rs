@@ -45,6 +45,12 @@ pub struct Bucket {
     pub index: u32, // Which bucket are we.
 }
 
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Robot {
+    pub index: u32, // Which bucket are we.
+}
+
 impl Default for DiggingStatus {
     fn default() -> Self {
         DiggingStatus {
@@ -183,18 +189,57 @@ impl<'s> System<'s> for BucketRenderSystem {
                 hidden.remove(entity);
             }
             let filled_buckets = digging.scoops / digging.scoops_per_bucket;
-            if let UiImage::PartialTexture { left, right, .. } = image {
-                if bucket.index < filled_buckets {
-                    *left = 0.125;
-                    *right = 0.25;
-                } else {
-                    *left = 0.;
-                    *right = 0.125;
+            if bucket.index < filled_buckets {
+                update_texture(image, Some(0.125), Some(0.25), Some(0.), Some(0.125));
+            } else {
+                update_texture(image, Some(0.), Some(0.125), Some(0.), Some(0.125));
+            }
+        }
+    }
+}
+
+pub struct RobotRenderSystem;
+
+impl<'s> System<'s> for RobotRenderSystem {
+    // Also needed: Components for UI, not sure what we'll use yet.
+    type SystemData = (
+        Read<'s, DiggingStatus>,
+        ReadStorage<'s, Robot>,
+        WriteStorage<'s, UiImage>,
+        WriteStorage<'s, HiddenPropagate>,
+        Entities<'s>,
+    );
+
+    fn run(&mut self, (digging, robots, mut images, mut hidden, entities): Self::SystemData) {
+        /*
+         Loop through alertables, update the UI based on the alertable state.
+        */
+        for (robot, mut image, entity) in (&robots, &mut images, &entities).join() {
+            match digging.robot_status {
+                RobotStatus::Locked | RobotStatus::Idling => {
+                    if hidden.get(entity).is_none() {
+                        hidden
+                            .insert(entity, HiddenPropagate::new())
+                            .expect("Unreachable, definitely exists");
+                    }
+                }
+                RobotStatus::Running {
+                    partial_buckets, ..
+                } => {
+                    if hidden.get(entity).is_some() {
+                        hidden.remove(entity);
+                    }
+                    if partial_buckets > 0.5 {
+                        update_texture(image, Some(0.125), Some(0.25), Some(0.375), Some(0.5));
+                    } else {
+                        update_texture(image, Some(0.), Some(0.125), Some(0.375), Some(0.5));
+                    }
                 }
             }
         }
     }
 }
+
 pub struct ShovelTimingSystem;
 
 impl<'s> System<'s> for ShovelTimingSystem {
@@ -212,21 +257,19 @@ impl<'s> System<'s> for DrillDiggingSystem {
     type SystemData = (Write<'s, DiggingStatus>, Read<'s, Time>);
     fn run(&mut self, (mut digging, time): Self::SystemData) {
         let mut scooped = false;
-        if digging.can_scoop() {
-            if let DrillStatus::Running {
-                time_left,
-                partial_scoops,
-            } = &mut digging.drill_status
-            {
-                *time_left -= time.delta_seconds();
-                *partial_scoops += DRILL_SPEED * time.delta_seconds();
-                if *partial_scoops > 1. {
-                    *partial_scoops -= 1.;
-                    scooped = true;
-                }
-                if *time_left < 0. {
-                    digging.drill_status = DrillStatus::Idling;
-                }
+        if let DrillStatus::Running {
+            time_left,
+            partial_scoops,
+        } = &mut digging.drill_status
+        {
+            *time_left -= time.delta_seconds();
+            *partial_scoops += DRILL_SPEED * time.delta_seconds();
+            if *partial_scoops > 1. {
+                *partial_scoops -= 1.;
+                scooped = true;
+            }
+            if *time_left < 0. {
+                digging.drill_status = DrillStatus::Idling;
             }
         }
         if scooped {
@@ -327,6 +370,7 @@ impl SystemBundle<'_, '_> for DiggingBundle {
     ) -> Result<(), Error> {
         world.insert(DiggingStatus::default());
         dispatcher.add(DepthRenderSystem, "depth_render", &[]);
+        dispatcher.add(RobotRenderSystem, "robot_render", &[]);
         dispatcher.add(BucketRenderSystem, "bucket_render", &[]);
         dispatcher.add(ProgressionSystem, "progression", &[]);
         dispatcher.add(DrillDiggingSystem, "drill_digging", &[]);
