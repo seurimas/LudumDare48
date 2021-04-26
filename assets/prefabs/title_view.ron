@@ -13,6 +13,23 @@ Container(
     ),
     background: SolidColor(0.0, 0.0, 0.0, 0.5),
     children: [
+        Label (
+            transform: (
+                id: "title",
+                anchor: TopMiddle,
+                width: 1024.,
+                height: 52,
+                x: 0.,
+                y: -16.,
+                mouse_reactive: false,
+            ),
+            text: (
+                text: "⛏️ Digging Deeper 🪣️",
+                font_size: 48.,
+                color: (1., 1., 1., 1.),
+                font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
+            )
+        ),
         Button(
             transform: (
                 id: "play",
