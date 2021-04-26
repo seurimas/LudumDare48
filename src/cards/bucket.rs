@@ -1,6 +1,5 @@
 use super::DiggingCard;
 use crate::prelude::*;
-use log::info;
 
 pub const BUCKET_SUCCESS_TIME: f32 = 1.;
 
@@ -38,16 +37,13 @@ impl<'s> System<'s> for BucketUpdateSystem {
                             digging.empty_bucket();
                             sounds.empty_bucket();
                             if digging.no_buckets() {
-                                info!("cleared buckets");
                                 *card = DiggingCard::Bucket(BucketState::Finished(1.));
                             } else {
-                                info!("cleared 1 bucket");
                                 *card = DiggingCard::Bucket(BucketState::Unheld(*progress));
                             }
                         }
                     }
                     BucketState::Finished(_) => {
-                        info!("destroy all buckets");
                         entities
                             .delete(entity)
                             .expect("Unreachable, entitity definitely exists");

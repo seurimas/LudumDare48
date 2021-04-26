@@ -26,11 +26,11 @@ Custom(
             children: [
                 Label (
                     transform: (
-                        anchor: MiddleLeft,
-                        width: 128.,
+                        anchor: TopMiddle,
+                        width: 200.,
                         height: 32,
-                        x: 64.,
-                        y: 0.,
+                        x: 0.,
+                        y: -32.,
                         z: 2.,
                         mouse_reactive: true,
                     ),
