@@ -320,6 +320,7 @@ impl<'s> System<'s> for CardInputSystem {
                                     position: (a, b, c),
                                     ..
                                 } => {
+                                    digging.drill_pulls += 1;
                                     *card = DiggingCard::Drill(DrillState::Running {
                                         position: (*a, *b, *c),
                                         velocity: (
