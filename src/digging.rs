@@ -7,7 +7,7 @@ pub const BLOCKS_PER_METER: u32 = SCOOPS_PER_METER / SCOOPS_PER_BLOCK;
 pub const DRILL_METER: u32 = 20;
 pub const DRILL_TIME: f32 = 60.;
 pub const DRILL_SPEED: f32 = 4.;
-pub const ROBOT_METER: u32 = 60;
+pub const ROBOT_METER: u32 = 40;
 pub const ROBOT_TIME: f32 = 60.;
 pub const ROBOT_SPEED: f32 = 0.25;
 

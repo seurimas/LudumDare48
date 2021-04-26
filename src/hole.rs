@@ -3,7 +3,7 @@ use crate::prelude::*;
 use amethyst::core::math::{Point3, Vector3};
 use amethyst::tiles::*;
 
-pub const VICTORY_DEPTH: u32 = 200;
+pub const VICTORY_DEPTH: u32 = 100;
 pub const TILE_SCREEN_SIZE: f32 = 64.;
 
 #[derive(Default, Clone)]
