@@ -1,6 +1,7 @@
 use crate::assets::*;
 use crate::captcha;
 use crate::hole::spawn_hole;
+use crate::hole::VICTORY_DEPTH;
 use crate::prelude::*;
 use amethyst::{
     assets::{AssetStorage, Loader},
@@ -101,6 +102,18 @@ impl SimpleState for GameplayState {
                     .expect("Unreachable: entity just created");
             },
         );
+    }
+
+    fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
+        data.world
+            .exec(|(digging,): (Read<'_, crate::digging::DiggingStatus>,)| {
+                if digging.depth > VICTORY_DEPTH {
+                    return Trans::Switch(Box::new(GameOverState {
+                        assets: self.assets.clone(),
+                    }));
+                }
+                Trans::None
+            })
     }
 }
 
@@ -228,5 +241,49 @@ impl SimpleState for LoadingState {
             }
         }
         SimpleTrans::None
+    }
+}
+
+struct GameOverState {
+    assets: GameAssets,
+}
+
+impl SimpleState for GameOverState {
+    fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
+        data.world.exec(
+            |(mut spawner, digging): (WidgetSpawner, Read<'_, DiggingStatus>)| {
+                spawner.spawn_ui_widget("prefabs/game_over.ron", Position { x: 0., y: 0. })
+            },
+        );
+    }
+
+    fn handle_event(
+        &mut self,
+        data: StateData<'_, GameData<'_, '_>>,
+        event: StateEvent,
+    ) -> SimpleTrans {
+        match event {
+            StateEvent::Ui(ui_event) => data.world.exec(
+                |(finder, mut digging): (UiFinder<'_>, Write<'_, DiggingStatus>)| {
+                    if ui_event.event_type == UiEventType::Click {
+                        if let Some(play) = finder.find("play") {
+                            *digging = DiggingStatus::default();
+                            if play == ui_event.target {
+                                return SimpleTrans::Switch(Box::new(GameplayState {
+                                    assets: self.assets.clone(),
+                                }));
+                            }
+                        }
+                        if let Some(exit) = finder.find("exit") {
+                            if exit == ui_event.target {
+                                return Trans::Quit;
+                            }
+                        }
+                    }
+                    Trans::None
+                },
+            ),
+            _ => Trans::None,
+        }
     }
 }

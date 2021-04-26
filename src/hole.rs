@@ -3,6 +3,8 @@ use crate::prelude::*;
 use amethyst::core::math::{Point3, Vector3};
 use amethyst::tiles::*;
 
+pub const VICTORY_DEPTH: u32 = 500;
+
 #[derive(Default, Clone)]
 pub struct HoleTile;
 impl Tile for HoleTile {
@@ -69,7 +71,7 @@ pub fn spawn_hole(world: &mut World) {
     world
         .create_entity()
         .with(TileMap::<HoleTile, MortonEncoder2D>::new(
-            Vector3::<u32>::new(BLOCKS_PER_METER, 500, 1),
+            Vector3::<u32>::new(BLOCKS_PER_METER, VICTORY_DEPTH, 1),
             Vector3::<u32>::new(32, 32, 1),
             Some(tilesheet.clone()),
         ))
@@ -79,7 +81,7 @@ pub fn spawn_hole(world: &mut World) {
     world
         .create_entity()
         .with(TileMap::<SpriteTile, MortonEncoder2D>::new(
-            Vector3::<u32>::new(BLOCKS_PER_METER, 500, 1),
+            Vector3::<u32>::new(BLOCKS_PER_METER, VICTORY_DEPTH, 1),
             Vector3::<u32>::new(32, 32, 1),
             Some(tilesheet),
         ))

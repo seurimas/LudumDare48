@@ -33,7 +33,7 @@ pub struct DiggingStatus {
     scoops_per_bucket: u32,
     pub time_since_shovel: f32,
     buckets: u32,
-    depth: u32,
+    pub depth: u32,
     progression: u32,
     progress_checks: u32,
     pub drill_status: DrillStatus,
