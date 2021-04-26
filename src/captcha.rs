@@ -40,9 +40,9 @@ pub fn get_captchas<'a>(world: &mut World, progress: &'a mut ProgressCounter) ->
 fn gen_captcha<'a>(world: &mut World, progress: &'a mut ProgressCounter) -> CaptchaData {
     let (answer, image_png_buffer) = Captcha::new()
         .add_chars(5)
-        .apply_filter(filters::Noise::new(0.6))
-        .apply_filter(filters::Dots::new(10).min_radius(10).max_radius(20))
-        .apply_filter(filters::Cow::new().min_radius(20).max_radius(40))
+        .apply_filter(filters::Noise::new(0.3))
+        .apply_filter(filters::Dots::new(3))
+        .apply_filter(filters::Cow::new())
         .apply_filter(filters::Wave::new(0.3, 0.6))
         .set_color([22, 50, 166])
         .view(CAPTCHA_WIDTH, CAPTCHA_HEIGHT)
