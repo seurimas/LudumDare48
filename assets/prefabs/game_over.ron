@@ -3,7 +3,7 @@ Container(
     transform: (
         id: "game_over",
         anchor: Middle,
-        stretch: XY( x_margin: 0.0, y_margin: 0.0, keep_aspect_ratio: true),
+        stretch: XY( x_margin: 0.0, y_margin: 0.0, keep_aspect_ratio: false),
 
         // here the z-value is relevant to get shown `in front of' the other UI elements
         z: 2.0,
@@ -13,6 +13,91 @@ Container(
     ),
     background: SolidColor(0.0, 0.0, 0.0, 0.5),
     children: [
+        Label (
+            transform: (
+                id: "scoops_shoveled",
+                anchor: TopMiddle,
+                width: 256.,
+                height: 32,
+                x: -128.,
+                y: -32.,
+                mouse_reactive: true,
+            ),
+            text: (
+                text: "Scoops Shoveled",
+                font_size: 25.,
+                color: (1., 1., 1., 1.),
+                font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
+            )
+        ),
+        Label (
+            transform: (
+                id: "drill_pulls",
+                anchor: TopMiddle,
+                width: 256.,
+                height: 32,
+                x: 128.,
+                y: -32.,
+                mouse_reactive: true,
+            ),
+            text: (
+                text: "Scoops Shoveled",
+                font_size: 25.,
+                color: (1., 1., 1., 1.),
+                font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
+            )
+        ),
+        Label (
+            transform: (
+                id: "drills_started",
+                anchor: TopMiddle,
+                width: 256.,
+                height: 32,
+                x: -128.,
+                y: -64.,
+                mouse_reactive: true,
+            ),
+            text: (
+                text: "Scoops Shoveled",
+                font_size: 25.,
+                color: (1., 1., 1., 1.),
+                font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
+            )
+        ),
+        Label (
+            transform: (
+                id: "captchas_solved",
+                anchor: TopMiddle,
+                width: 256.,
+                height: 32,
+                x: 128.,
+                y: -64.,
+                mouse_reactive: true,
+            ),
+            text: (
+                text: "Scoops Shoveled",
+                font_size: 25.,
+                color: (1., 1., 1., 1.),
+                font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
+            )
+        ),
+        Label (
+            transform: (
+                id: "time_played",
+                anchor: TopMiddle,
+                width: 256.,
+                height: 32,
+                x: 0.,
+                y: -98.,
+                mouse_reactive: true,
+            ),
+            text: (
+                text: "Scoops Shoveled",
+                font_size: 25.,
+                color: (1., 1., 1., 1.),
+                font: File("fonts/Bangers-Regular.ttf", ("TTF", ())),
+            )
+        ),
         Button(
             transform: (
                 id: "play",

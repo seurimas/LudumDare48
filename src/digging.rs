@@ -4,12 +4,12 @@ use amethyst::renderer::Camera;
 pub const SCOOPS_PER_BLOCK: u32 = 4;
 pub const SCOOPS_PER_METER: u32 = 28;
 pub const BLOCKS_PER_METER: u32 = SCOOPS_PER_METER / SCOOPS_PER_BLOCK;
-pub const DRILL_METER: u32 = 10; // Raise before release.
-pub const DRILL_TIME: f32 = 60.; // Raise before release.
-pub const DRILL_SPEED: f32 = 4.; // Change before release.
-pub const ROBOT_METER: u32 = 25; // Raise before release.
-pub const ROBOT_TIME: f32 = 120.; // Raise before release.
-pub const ROBOT_SPEED: f32 = 0.25; // Change before release.
+pub const DRILL_METER: u32 = 20;
+pub const DRILL_TIME: f32 = 60.;
+pub const DRILL_SPEED: f32 = 4.;
+pub const ROBOT_METER: u32 = 60;
+pub const ROBOT_TIME: f32 = 60.;
+pub const ROBOT_SPEED: f32 = 0.25;
 
 #[derive(Clone, Copy)]
 pub enum DrillStatus {
@@ -38,6 +38,12 @@ pub struct DiggingStatus {
     progress_checks: u32,
     pub drill_status: DrillStatus,
     pub robot_status: RobotStatus,
+    pub drill_pulls: u32,
+    pub drills_started: u32,
+    pub scoops_shoveled: u32,
+    pub captchas_solved: u32,
+    pub time_played: f32,
+    pub game_over: bool,
 }
 
 #[derive(Component, Debug)]
@@ -61,9 +67,15 @@ impl Default for DiggingStatus {
             buckets: 5,
             depth: 4,
             progression: 0,
-            progress_checks: SCOOPS_PER_METER / 4, // Change before release
+            progress_checks: SCOOPS_PER_METER,
             drill_status: DrillStatus::Locked,
             robot_status: RobotStatus::Locked,
+            drill_pulls: 0,
+            drills_started: 0,
+            scoops_shoveled: 0,
+            captchas_solved: 0,
+            time_played: 0.,
+            game_over: false,
         }
     }
 }
@@ -71,6 +83,7 @@ impl Default for DiggingStatus {
 impl DiggingStatus {
     pub fn scoop(&mut self, shovel: bool) {
         if shovel {
+            self.scoops_shoveled += 1;
             self.depth += 4;
             self.time_since_shovel = 0.;
             self.scoops += 1;
@@ -80,6 +93,7 @@ impl DiggingStatus {
     }
 
     pub fn drill(&mut self) {
+        self.drills_started += 1;
         self.drill_status = DrillStatus::Running {
             time_left: DRILL_TIME,
             partial_scoops: 0.,
@@ -87,6 +101,7 @@ impl DiggingStatus {
     }
 
     pub fn solve_captcha(&mut self) {
+        self.captchas_solved += 1;
         self.robot_status = RobotStatus::Running {
             time_left: ROBOT_TIME,
             partial_buckets: 0.,
@@ -138,8 +153,8 @@ impl DiggingStatus {
     }
 
     pub fn progress(&mut self) -> u32 {
-        if self.depth >= (self.progression * self.progress_checks) + self.progress_checks {
-            self.progression = self.depth / self.progress_checks;
+        if (self.depth - 4) >= (self.progression * self.progress_checks) + self.progress_checks {
+            self.progression = (self.depth - 4) / self.progress_checks;
             self.progression
         } else {
             0
@@ -186,17 +201,17 @@ impl<'s> System<'s> for DepthCameraSystem {
                 if distance > 128. {
                     transform.set_translation_y(
                         transform.translation().y
-                            - time.delta_seconds() * crate::hole::TILE_SCREEN_SIZE,
+                            - time.delta_seconds() * crate::hole::TILE_SCREEN_SIZE * 4.,
                     );
                 } else if distance > 64. {
                     transform.set_translation_y(
                         transform.translation().y
-                            - time.delta_seconds() * crate::hole::TILE_SCREEN_SIZE / 2.,
+                            - time.delta_seconds() * crate::hole::TILE_SCREEN_SIZE * 2.,
                     );
                 } else if distance > 1. {
                     transform.set_translation_y(
                         transform.translation().y
-                            - time.delta_seconds() * crate::hole::TILE_SCREEN_SIZE / 4.,
+                            - time.delta_seconds() * crate::hole::TILE_SCREEN_SIZE,
                     );
                 } else {
                     transform
@@ -361,8 +376,12 @@ impl<'s> System<'s> for ProgressionSystem {
         WriteStorage<'s, Alertable>,
         WidgetSpawner<'s>,
         SoundPlayer<'s>,
+        Read<'s, Time>,
     );
-    fn run(&mut self, (mut digging, mut alertables, mut spawner, sounds): Self::SystemData) {
+    fn run(&mut self, (mut digging, mut alertables, mut spawner, sounds, time): Self::SystemData) {
+        if !digging.game_over {
+            digging.time_played += time.delta_seconds();
+        }
         match digging.progress() {
             DRILL_METER => {
                 sounds.drill_unlock();

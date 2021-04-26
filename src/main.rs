@@ -56,6 +56,7 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(CardsBundle)?
         .with_bundle(DiggingBundle)?
         .with(DjSystem, "dj", &[])
+        .with(crate::state::EndGameRenderer, "endgame", &[])
         .with(WidgetPositioningSystem, "widget_pos", &[]);
 
     let mut game = Application::new(resources, state::LoadingState::new(), game_data)?;

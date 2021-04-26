@@ -3,7 +3,7 @@ use crate::prelude::*;
 use amethyst::core::math::{Point3, Vector3};
 use amethyst::tiles::*;
 
-pub const VICTORY_DEPTH: u32 = 500;
+pub const VICTORY_DEPTH: u32 = 200;
 pub const TILE_SCREEN_SIZE: f32 = 64.;
 
 #[derive(Default, Clone)]
@@ -11,7 +11,15 @@ pub struct HoleTile;
 impl Tile for HoleTile {
     fn sprite(&self, point: Point3<u32>, world: &World) -> Option<usize> {
         let (digging,): (Read<DiggingStatus>,) = world.system_data();
-        let sprite_idx = if point.y <= 10 { 0 } else { 16 };
+        let sprite_idx = if point.y < crate::digging::DRILL_METER {
+            0
+        } else if point.y < crate::digging::ROBOT_METER {
+            16
+        } else if point.y < VICTORY_DEPTH - 1 {
+            24
+        } else {
+            32
+        };
         if point.y < digging.level() {
             Some(sprite_idx + 4)
         } else if point.y > digging.level() {
@@ -69,7 +77,7 @@ pub fn spawn_hole(world: &mut World) {
     let master = world.read_resource::<SpriteStorage>().master.clone();
     let mut transform = Transform::default();
     transform.set_translation_x(32.);
-    transform.set_translation_y(-250. * 64.);
+    transform.set_translation_y(VICTORY_DEPTH as f32 * -32.);
     transform.set_translation_z(0.2);
     transform.set_scale(Vector3::new(2., 2., 1.));
     world

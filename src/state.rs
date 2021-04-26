@@ -57,8 +57,8 @@ impl SimpleState for GameplayState {
                     let bucket_entity = spawner.spawn_ui_widget(
                         "prefabs/bucket.ron",
                         Position {
-                            x: -16.,
-                            y: 16. + (i as f32 * 32.),
+                            x: -48.,
+                            y: 48. + (i as f32 * 64.),
                         },
                     );
                     buckets
@@ -66,7 +66,7 @@ impl SimpleState for GameplayState {
                         .expect("Unreachable, entity just created");
                 }
                 let robot_entity =
-                    spawner.spawn_ui_widget("prefabs/robot.ron", Position { x: -48., y: 16. });
+                    spawner.spawn_ui_widget("prefabs/robot.ron", Position { x: -112., y: 48. });
                 robots
                     .insert(robot_entity, crate::digging::Robot { index: 0 })
                     .expect("Unreachable, entity just created");
@@ -107,7 +107,7 @@ impl SimpleState for GameplayState {
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
         data.world
             .exec(|(digging,): (Read<'_, crate::digging::DiggingStatus>,)| {
-                if digging.depth > VICTORY_DEPTH {
+                if digging.depth > VICTORY_DEPTH * SCOOPS_PER_METER {
                     return Trans::Switch(Box::new(GameOverState {
                         assets: self.assets.clone(),
                     }));
@@ -282,6 +282,39 @@ impl SimpleState for TitleViewState {
         }
     }
 }
+pub struct EndGameRenderer;
+
+impl<'s> System<'s> for EndGameRenderer {
+    // Also needed: Components for UI, not sure what we'll use yet.
+    type SystemData = (
+        Read<'s, DiggingStatus>,
+        WriteStorage<'s, UiText>,
+        ReadStorage<'s, UiTransform>,
+    );
+
+    fn run(&mut self, (digging, mut texts, transforms): Self::SystemData) {
+        for (transform, mut text) in (&transforms, &mut texts).join() {
+            match transform.id.as_ref() {
+                "scoops_shoveled" => {
+                    text.text = format!("Scoops Shoveled: {}", digging.scoops_shoveled);
+                }
+                "drill_pulls" => {
+                    text.text = format!("Pull Cords Pulled: {}", digging.drill_pulls);
+                }
+                "drills_started" => {
+                    text.text = format!("Drills Started: {}", digging.drills_started);
+                }
+                "captchas_solved" => {
+                    text.text = format!("Captchas Solved: {}", digging.captchas_solved);
+                }
+                "time_played" => {
+                    text.text = format!("Time Played: {}", digging.time_played);
+                }
+                _ => {}
+            }
+        }
+    }
+}
 
 struct GameOverState {
     assets: GameAssets,
@@ -289,8 +322,10 @@ struct GameOverState {
 
 impl SimpleState for GameOverState {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
+        data.world.delete_all();
         data.world.exec(
-            |(mut spawner, digging): (WidgetSpawner, Read<'_, DiggingStatus>)| {
+            |(mut spawner, mut digging): (WidgetSpawner, Write<'_, DiggingStatus>)| {
+                digging.game_over = true;
                 spawner.spawn_ui_widget("prefabs/game_over.ron", Position { x: 0., y: 0. })
             },
         );
@@ -306,8 +341,8 @@ impl SimpleState for GameOverState {
                 |(finder, mut digging): (UiFinder<'_>, Write<'_, DiggingStatus>)| {
                     if ui_event.event_type == UiEventType::Click {
                         if let Some(play) = finder.find("play") {
-                            *digging = DiggingStatus::default();
                             if play == ui_event.target {
+                                *digging = DiggingStatus::default();
                                 return SimpleTrans::Switch(Box::new(GameplayState {
                                     assets: self.assets.clone(),
                                 }));
