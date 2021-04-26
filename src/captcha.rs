@@ -1,3 +1,4 @@
+use crate::assets::load_texture;
 use crate::prelude::*;
 use amethyst::{
     assets::{
@@ -24,8 +25,8 @@ pub const CAPTCHA_HEIGHT: u32 = 120;
 
 #[derive(Clone)]
 pub struct CaptchaData {
-    answer: String,
-    texture: Handle<Texture>,
+    pub answer: String,
+    pub texture: Handle<Texture>,
 }
 
 pub fn get_captchas<'a>(world: &mut World, progress: &'a mut ProgressCounter) -> Vec<CaptchaData> {
@@ -45,13 +46,16 @@ fn gen_captcha<'a>(world: &mut World, progress: &'a mut ProgressCounter) -> Capt
         .expect("failed to gen captcha");
     let image =
         image::load_from_memory_with_format(&image_png_buffer, ImageFormat::Png).expect("image???");
-    let texture = load_2d_texture(
-        world,
-        progress,
-        image.into_rgb8().to_vec(),
-        CAPTCHA_WIDTH,
-        CAPTCHA_HEIGHT,
-    );
+    // let texture = load_2d_texture(
+    //     world,
+    //     progress,
+    //     image.into_rgb8().into_vec(),
+    //     CAPTCHA_WIDTH,
+    //     CAPTCHA_HEIGHT,
+    // );
+    let file_path = format!("generated/{}.png", answer);
+    image.save(format!("assets/{}", file_path));
+    let texture = load_texture(world, file_path, progress);
     CaptchaData { answer, texture }
 }
 

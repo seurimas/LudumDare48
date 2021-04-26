@@ -189,7 +189,7 @@ impl<'s> System<'s> for CardSpawningSystem {
                     )),
                     AlertState::Robot(RobotAlertState::CaptchaNeeded) => Some((
                         "prefabs/robot_card.ron",
-                        DiggingCard::Robot(RobotState("Test".to_string(), "".to_string())),
+                        DiggingCard::Robot(RobotState("".to_string(), "".to_string())),
                     )),
                     _ => None,
                 } {
@@ -503,6 +503,60 @@ impl<'s> System<'s> for DrillRenderingSystem {
     }
 }
 
+pub struct RobotRenderingSystem;
+
+impl<'s> System<'s> for RobotRenderingSystem {
+    // I'm not 100% sure the component to use for the UI elements here. Probably UIContainer?
+    type SystemData = (
+        Read<'s, DiggingStatus>,
+        Read<'s, Vec<CaptchaData>>,
+        WriteStorage<'s, DiggingCard>,
+        WriteStorage<'s, UiTransform>,
+        WriteStorage<'s, UiImage>,
+        Read<'s, AssetStorage<Texture>>,
+        Entities<'s>,
+    );
+
+    fn run(
+        &mut self,
+        (digging, captchas, mut cards, mut transforms, mut images, assets, entities): Self::SystemData,
+    ) {
+        /*
+         Loop through cards (really, only the one on screen, probably), update the UI based on card state.
+        */
+        for mut card in (&mut cards).join() {
+            match card {
+                DiggingCard::Robot(RobotState(captcha_val, _typed_val)) => {
+                    println!("{:?} {:?}", captcha_val, _typed_val);
+                    let cloned = captcha_val.clone();
+                    for (mut transform, entity) in (&mut transforms, &entities).join() {
+                        if transform.id.eq("captcha") {
+                            match (cloned.as_ref(), images.get(entity)) {
+                                ("", _) | (_, Some(UiImage::SolidColor(_))) => {
+                                    let range =
+                                        rand::distributions::Uniform::new(0, captchas.len());
+                                    let captcha = captchas
+                                        .get(thread_rng().sample(range))
+                                        .expect("Bad randomness");
+                                    *card = DiggingCard::Robot(RobotState(
+                                        captcha.answer.to_string(),
+                                        "".to_string(),
+                                    ));
+                                    images
+                                        .insert(entity, UiImage::Texture(captcha.texture.clone()))
+                                        .expect("Unreachable, entity exists");
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
 pub struct CardsBundle;
 
 impl SystemBundle<'_, '_> for CardsBundle {
@@ -539,6 +593,7 @@ impl SystemBundle<'_, '_> for CardsBundle {
         );
         dispatcher.add(ShovelRenderingSystem, "shovel_render", &["card_input"]);
         dispatcher.add(DrillRenderingSystem, "drill_render", &["drill_update"]);
+        dispatcher.add(RobotRenderingSystem, "robot_card_render", &["card_input"]);
         Ok(())
     }
 }

@@ -4,12 +4,12 @@ use amethyst::renderer::Camera;
 pub const SCOOPS_PER_BLOCK: u32 = 4;
 pub const SCOOPS_PER_METER: u32 = 28;
 pub const BLOCKS_PER_METER: u32 = SCOOPS_PER_METER / SCOOPS_PER_BLOCK;
-pub const DRILL_METER: u32 = 1; // Raise before release.
-pub const DRILL_TIME: f32 = 10.; // Raise before release.
+pub const DRILL_METER: u32 = 10; // Raise before release.
+pub const DRILL_TIME: f32 = 60.; // Raise before release.
 pub const DRILL_SPEED: f32 = 4.; // Change before release.
-pub const ROBOT_METER: u32 = 2; // Raise before release.
-pub const ROBOT_TIME: f32 = 10.; // Raise before release.
-pub const ROBOT_SPEED: f32 = 0.5; // Change before release.
+pub const ROBOT_METER: u32 = 25; // Raise before release.
+pub const ROBOT_TIME: f32 = 120.; // Raise before release.
+pub const ROBOT_SPEED: f32 = 0.25; // Change before release.
 
 #[derive(Clone, Copy)]
 pub enum DrillStatus {
@@ -58,8 +58,8 @@ impl Default for DiggingStatus {
             scoops: 0,
             scoops_per_bucket: 8,
             time_since_shovel: 1.,
-            buckets: 3,
-            depth: 0,
+            buckets: 5,
+            depth: 4,
             progression: 0,
             progress_checks: SCOOPS_PER_METER / 4, // Change before release
             drill_status: DrillStatus::Locked,
@@ -70,10 +70,12 @@ impl Default for DiggingStatus {
 
 impl DiggingStatus {
     pub fn scoop(&mut self, shovel: bool) {
-        self.depth += 1;
         if shovel {
+            self.depth += 4;
             self.time_since_shovel = 0.;
             self.scoops += 1;
+        } else {
+            self.depth += 1;
         }
     }
 
@@ -178,18 +180,27 @@ impl<'s> System<'s> for DepthCameraSystem {
 
     fn run(&mut self, (digging, cameras, mut transforms, time): Self::SystemData) {
         for (camera, mut transform) in (&cameras, &mut transforms).join() {
-            let distance = transform.translation().y - digging.level() as f32 * -32.;
+            let distance =
+                transform.translation().y - digging.level() as f32 * -crate::hole::TILE_SCREEN_SIZE;
             if distance > 0. {
                 if distance > 128. {
-                    transform
-                        .set_translation_y(transform.translation().y - time.delta_seconds() * 8.);
+                    transform.set_translation_y(
+                        transform.translation().y
+                            - time.delta_seconds() * crate::hole::TILE_SCREEN_SIZE,
+                    );
                 } else if distance > 64. {
-                    transform
-                        .set_translation_y(transform.translation().y - time.delta_seconds() * 4.);
+                    transform.set_translation_y(
+                        transform.translation().y
+                            - time.delta_seconds() * crate::hole::TILE_SCREEN_SIZE / 2.,
+                    );
                 } else if distance > 1. {
-                    transform.set_translation_y(transform.translation().y - time.delta_seconds());
+                    transform.set_translation_y(
+                        transform.translation().y
+                            - time.delta_seconds() * crate::hole::TILE_SCREEN_SIZE / 4.,
+                    );
                 } else {
-                    transform.set_translation_y(digging.level() as f32 * -32.);
+                    transform
+                        .set_translation_y(digging.level() as f32 * -crate::hole::TILE_SCREEN_SIZE);
                 }
             }
         }

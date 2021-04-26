@@ -1,4 +1,5 @@
-use crate::assets::SoundStorage;
+pub use crate::assets::{SoundStorage, SpriteStorage};
+pub use crate::captcha::CaptchaData;
 pub use crate::cards::Alertable;
 pub use crate::digging::{
     DiggingStatus, DrillStatus, RobotStatus, BLOCKS_PER_METER, SCOOPS_PER_BLOCK, SCOOPS_PER_METER,
@@ -25,7 +26,7 @@ pub use amethyst::{
         UiFinder, UiImage, UiText, UiTransform,
     },
 };
-pub use rand::random;
+pub use rand::{random, thread_rng, Rng};
 pub use shrev::EventChannel;
 
 pub fn get_ui_name(
