@@ -109,7 +109,9 @@ impl DiggingStatus {
     }
 
     pub fn empty_bucket(&mut self) {
-        self.scoops = self.scoops - self.scoops_per_bucket;
+        if self.scoops > 0 {
+            self.scoops = self.scoops - self.scoops_per_bucket;
+        }
     }
 
     pub fn scoops_in_top_bucket(&self) -> u32 {
